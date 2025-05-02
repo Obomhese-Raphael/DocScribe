@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import connectDB from "./config/mongodb.js";
+import { clerkWebhooks } from "./controllers/webhookController.js";
 
 const app = express();
 connectDB();
@@ -16,6 +17,8 @@ const PORT = process.env.PORT || 5000;
 app.get("/", (req, res) => {
   res.send("API is running...");
 });
+
+app.post("/webhooks", clerkWebhooks);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
