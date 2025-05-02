@@ -1,24 +1,18 @@
-require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
-const mongoose = require("mongoose");
+import "dotenv/config";
+import express from "express";
+import cors from "cors";
+import connectDB from "./config/mongodb.js";
 
 const app = express();
+connectDB();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// Database connection
-mongoose
-  .connect(process.env.MONGODB_URI)
-  .then(() => console.log("Connected to MongoDB"))
-  .catch((err) => console.error("MongoDB connection error:", err));
+app.use("/api/clerk", express.raw({ type: "application/json" }));
+const PORT = process.env.PORT || 5000;
 
-// Routes
-
-// Health check
 app.get("/", (req, res) => {
   res.send("API is running...");
 });
@@ -29,7 +23,6 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Something went wrong!" });
 });
 
-const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
