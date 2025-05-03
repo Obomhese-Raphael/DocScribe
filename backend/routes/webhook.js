@@ -4,8 +4,9 @@ import { clerkWebhookHandler } from "../controllers/webhookController.js";
 
 const webhookRouter = express.Router();
 
+// Use express.raw for the webhook endpoint to properly handle verification
 webhookRouter.post(
-  "/clerk",
+  "/webhooks",
   express.raw({ type: "application/json" }),
   clerkWebhookHandler
 );

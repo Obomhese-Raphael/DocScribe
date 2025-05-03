@@ -12,6 +12,7 @@ import ScrollToTop from "./components/ScrollToTop";
 
 const App = () => {
   const location = useLocation();
+
   return (
     <div className="">
       <ToastContainer />
