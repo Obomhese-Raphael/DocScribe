@@ -1,5 +1,7 @@
+import axios from 'axios';
 import { useState } from 'react';
 import { FaPaperPlane, FaMapMarkerAlt, FaPhone, FaEnvelope } from 'react-icons/fa';
+import { toast } from 'react-toastify';
 
 type FormData = {
     name: string;
@@ -30,12 +32,22 @@ const Contact = () => {
 
         // Simulate API call
         try {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            console.log('Form submitted:', formData);
+            const response = await axios.post('/api/contact/submit', formData, {
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            })
+            console.log("Form Submitted Sucessfully", response);
             setSubmitSuccess(true);
-            setFormData({ name: '', email: '', message: '' });
+            setFormData({
+                name: "",
+                email: "",
+                message: ""
+            });
+            toast("Form Submitted Successfully ✅")
         } catch (error) {
             console.error('Submission error:', error);
+            toast("Error submitting Form. Try again 🔁")
         } finally {
             setIsSubmitting(false);
         }

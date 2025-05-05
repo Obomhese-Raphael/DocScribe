@@ -1,4 +1,6 @@
+import axios from 'axios';
 import { useState } from 'react';
+import { toast } from 'react-toastify';
 
 const Newsletter = () => {
     const [email, setEmail] = useState('');
@@ -7,15 +9,20 @@ const Newsletter = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsSubmitting(true);
         setMessage('');
 
+        if (!email.includes('@')) {
+            setMessage('Please enter a valid email');
+            return;
+        }
+
+        setIsSubmitting(true);
         // Simulate API call to subscribe to the newsletter
         try {
-            await new Promise((resolve) => setTimeout(resolve, 1500)); // Fake delay
-            console.log('Subscribed:', email);
-            setMessage('Thank you for subscribing to our newsletter!');
-            setEmail('');
+            const response = await axios.post("/api/newsletter/subscribe", { email });
+            setMessage("Successfully subscribed to weekly newsletter");
+            toast("Successfully subscribed to weekly newsletter ✅")
+            console.log(response);
         } catch (error: any) {
             console.error('Subscription error:', error.message);
             setMessage('Oops! Something went wrong. Please try again later.');

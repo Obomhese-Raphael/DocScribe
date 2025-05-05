@@ -1,5 +1,6 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
+import axios from 'axios';
 import {
   Upload,
   FileText,
@@ -7,11 +8,26 @@ import {
   X,
   Clipboard,
   ArrowRight,
-  AlertCircle
+  AlertCircle,
+  Loader
 } from 'lucide-react';
 
 interface FileWithPreview extends File {
   preview?: string;
+}
+
+interface AnalysisResult {
+  originalFile: string;
+  summaryDate: string;
+  summary: string;
+}
+
+interface UploadResponse {
+  path: string;
+}
+
+interface AnalyzeResponse {
+  results: AnalysisResult;
 }
 
 const UploadPage = () => {
@@ -19,6 +35,8 @@ const UploadPage = () => {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [pastedText, setPastedText] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [analysisResults, setAnalysisResults] = useState<AnalysisResult | null>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
   // Maximum file size: 10MB
@@ -31,6 +49,15 @@ const UploadPage = () => {
     'text/plain': ['.txt'],
   };
 
+  // Clean up object URLs on component unmount
+  useEffect(() => {
+    return () => {
+      files.forEach(file => {
+        if (file.preview) URL.revokeObjectURL(file.preview);
+      });
+    };
+  }, [files]);
+
   const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
     // Handle rejected files
     if (rejectedFiles.length > 0) {
@@ -39,8 +66,9 @@ const UploadPage = () => {
       return;
     }
 
-    // Clear any previous errors
+    // Clear any previous errors and results
     setError(null);
+    setAnalysisResults(null);
 
     // Process accepted files
     const newFiles = acceptedFiles.map(file =>
@@ -68,26 +96,79 @@ const UploadPage = () => {
     }
   };
 
-  const handleTextSubmit = () => {
+  const handleTextSubmit = async () => {
     if (!pastedText.trim()) {
       setError('Please enter some text to analyze');
       return;
     }
 
-    // Here you would normally send the text to your backend
-    console.log('Text submitted for analysis:', pastedText);
-    setError(null);
+    try {
+      setLoading(true);
+      setError(null);
+      setAnalysisResults(null);
+
+      // Create a Blob from the text and convert to File object
+      const textBlob = new Blob([pastedText], { type: 'text/plain' });
+      const textFile = new Blob([textBlob], { type: 'text/plain' });
+      (textFile as any).name = 'pasted-text.txt';
+
+      // Create form data
+      const formData = new FormData();
+      formData.append('document', textFile);
+
+      // Upload text as a file
+      const uploadResponse = await axios.post<UploadResponse>('http://localhost:5000/api/upload', formData);
+
+      // Analyze the uploaded text file
+      const analyzeResponse = await axios.post<AnalyzeResponse>('http://localhost:5000/api/analyze', {
+        filePath: uploadResponse.data.path,
+        fileType: 'text/plain'
+      });
+
+      setAnalysisResults(analyzeResponse.data.results);
+    } catch (err: any) {
+      console.error('Error analyzing text:', err);
+      setError(err.response?.data?.error || 'Failed to analyze text');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleFileSubmit = () => {
+  const handleFileSubmit = async () => {
     if (files.length === 0) {
       setError('Please upload at least one file');
       return;
     }
 
-    // Here you would normally send the files to your backend
-    console.log('Files submitted for analysis:', files);
-    setError(null);
+    try {
+      setLoading(true);
+      setError(null);
+      setAnalysisResults(null);
+
+      // For now, we'll just analyze the first file
+      // You could extend this to handle multiple files if needed
+      const fileToAnalyze = files[0];
+
+      // Create form data
+      const formData = new FormData();
+      formData.append('document', fileToAnalyze);
+
+      // Upload file
+      const uploadResponse = await axios.post<UploadResponse>('http://localhost:5000/api/upload', formData);
+
+      // Analyze document
+      const analyzeResponse = await axios.post<AnalyzeResponse>('http://localhost:5000/api/analyze', {
+        filePath: uploadResponse.data.path,
+        fileType: fileToAnalyze.type
+      });
+
+      setAnalysisResults(analyzeResponse.data.results);
+    } catch (err: any) {
+      console.error('Error analyzing document:', err);
+      setError(err.response?.data?.error || 'Failed to analyze document');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getFileIcon = (file: FileWithPreview) => {
@@ -148,8 +229,8 @@ const UploadPage = () => {
               <div
                 {...getRootProps()}
                 className={`border-2 border-dashed rounded-lg p-8 mb-6 text-center cursor-pointer transition-colors ${isDragActive
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
                   }`}
               >
                 <input {...getInputProps()} />
@@ -203,11 +284,21 @@ const UploadPage = () => {
               <div className="text-right">
                 <button
                   onClick={handleFileSubmit}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center ml-auto"
-                  disabled={files.length === 0}
+                  disabled={files.length === 0 || loading}
+                  className={`px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center ml-auto ${(files.length === 0 || loading) ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
                 >
-                  Analyze Documents
-                  <ArrowRight size={18} className="ml-2" />
+                  {loading ? (
+                    <>
+                      <Loader size={18} className="mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      Analyze Documents
+                      <ArrowRight size={18} className="ml-2" />
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -232,16 +323,45 @@ const UploadPage = () => {
               <div className="text-right">
                 <button
                   onClick={handleTextSubmit}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center ml-auto"
-                  disabled={!pastedText.trim()}
+                  disabled={!pastedText.trim() || loading}
+                  className={`px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center ml-auto ${(!pastedText.trim() || loading) ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
                 >
-                  Analyze Text
-                  <ArrowRight size={18} className="ml-2" />
+                  {loading ? (
+                    <>
+                      <Loader size={18} className="mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      Analyze Text
+                      <ArrowRight size={18} className="ml-2" />
+                    </>
+                  )}
                 </button>
               </div>
             </div>
           )}
         </div>
+
+        {/* Analysis Results Section */}
+        {analysisResults && (
+          <div className="border-t border-gray-200 p-6">
+            <h2 className="text-xl font-bold mb-4">Document Analysis</h2>
+            <div className="bg-gray-50 p-4 rounded-md">
+              <p className="text-sm text-gray-500 mb-2">
+                File: {analysisResults.originalFile}
+              </p>
+              <p className="text-sm text-gray-500 mb-4">
+                Analyzed on: {new Date(analysisResults.summaryDate).toLocaleString()}
+              </p>
+              <div className="bg-white p-4 rounded-md border border-gray-200">
+                <h3 className="font-medium text-gray-800 mb-2">Summary</h3>
+                <p className="text-gray-700 whitespace-pre-line">{analysisResults.summary}</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

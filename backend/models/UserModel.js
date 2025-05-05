@@ -1,21 +1,29 @@
-// backend/models/UserModel.js
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
     _id: {
-      type: String, // Clerk user ID (like "user_abc123")
+      type: String, // Clerk user ID
       required: true,
     },
     email: {
       type: String,
       required: true,
-      unique: true,
     },
-    name: String,
+    firstName: String, // Store separately for easier access
+    lastName: String,
     image: String,
+    clerkData: {
+      // Store complete Clerk data for reference
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    // Disable automatic _id generation since we use Clerk's ID
+    _id: false,
+  }
 );
 
 const User = mongoose.model("User", userSchema);
