@@ -6,7 +6,7 @@ const webhookRouter = express.Router();
 
 // Use express.raw for the webhook endpoint to properly handle verification
 webhookRouter.post(
-  "/webhooks",
+  "/clerk",
   express.raw({ type: "application/json" }),
   clerkWebhookHandler
 );
