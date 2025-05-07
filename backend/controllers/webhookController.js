@@ -2,6 +2,8 @@ import User from "../models/UserModel.js";
 import { Webhook } from "svix";
 
 export const clerkWebhookHandler = async (req, res) => {
+  console.log("Webhook endpoint hit");
+
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
 
   if (!WEBHOOK_SECRET) {
@@ -13,6 +15,13 @@ export const clerkWebhookHandler = async (req, res) => {
   const svix_id = req.headers["svix-id"];
   const svix_timestamp = req.headers["svix-timestamp"];
   const svix_signature = req.headers["svix-signature"];
+
+  // Log headers for troubleshooting
+  console.log("Headers received:", {
+    "svix-id": svix_id ? "present" : "missing",
+    "svix-timestamp": svix_timestamp ? "present" : "missing",
+    "svix-signature": svix_signature ? "present" : "missing",
+  });
 
   if (!svix_id || !svix_timestamp || !svix_signature) {
     console.error("Missing Svix headers");
@@ -36,11 +45,12 @@ export const clerkWebhookHandler = async (req, res) => {
   let payload = req.body;
   if (!Buffer.isBuffer(payload)) {
     console.error("Payload is not a buffer", typeof payload);
-    return res.status(400).json({ error: "Invalid payload format" });
+    payload = Buffer.from(JSON.stringify(payload || {}));
   }
 
   // Convert Buffer to string
   const payloadString = payload.toString("utf8");
+  console.log("Payload preview:", payloadString.substring(0, 100) + "...");
 
   // Verify webhook
   const wh = new Webhook(WEBHOOK_SECRET);
@@ -48,9 +58,12 @@ export const clerkWebhookHandler = async (req, res) => {
 
   try {
     evt = wh.verify(payloadString, headers);
+    console.log("Webhook verification successful");
   } catch (err) {
     console.error("Webhook verification failed:", err);
-    return res.status(400).json({ error: "Verification failed" });
+    return res
+      .status(400)
+      .json({ error: "Verification failed", details: err.message });
   }
 
   const { type, data } = evt;
@@ -126,23 +139,11 @@ export const clerkWebhookHandler = async (req, res) => {
           {
             new: true,
             runValidators: true,
+            upsert: true, // Create if not exists
           }
         );
 
-        if (updatedUser) {
-          console.log(`✅ User ${data.id} updated successfully in MongoDB`);
-        } else {
-          console.warn(
-            `⚠️ User ${data.id} not found for update - creating new record`
-          );
-          // If user doesn't exist (rare edge case), create them
-          const newUserFromUpdate = new User({
-            _id: data.id,
-            ...userUpdateData,
-          });
-          await newUserFromUpdate.save();
-          console.log(`✅ User ${data.id} created from update event`);
-        }
+        console.log(`✅ User ${data.id} updated successfully in MongoDB`);
         break;
 
       case "user.deleted":

@@ -8,13 +8,21 @@
   ],
   "routes": [
     {
+      "src": "/api/webhooks",
+      "dest": "server.js",
+      "methods": ["POST"],
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Origin, X-Requested-With, Content-Type, Accept, svix-id, svix-timestamp, svix-signature"
+      }
+    },
+    {
       "src": "/api/(.*)",
       "dest": "server.js"
     },
     {
-      "src": "/api/webhooks",
-      "dest": "server.js",
-      "methods": ["POST"]
+      "src": "/(.*)",
+      "dest": "server.js"
     }
   ]
 }
