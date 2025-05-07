@@ -59,38 +59,90 @@ export const clerkWebhookHandler = async (req, res) => {
   try {
     switch (type) {
       case "user.created":
-      case "user.updated":
+        // Handle new user creation specifically
+        console.log("⭐ New user created event received:", data.id);
+
         // Find primary email
-        const primaryEmail = data.email_addresses?.find(
+        const primaryEmailForCreate = data.email_addresses?.find(
           (email) => email.id === data.primary_email_address_id
         )?.email_address;
 
-        if (!primaryEmail) {
-          console.warn("No primary email found for user:", data.id);
+        if (!primaryEmailForCreate) {
+          console.warn("No primary email found for new user:", data.id);
         }
 
-        console.log("User data:", {
+        console.log("New user data:", {
           id: data.id,
-          email: primaryEmail,
+          email: primaryEmailForCreate,
           name: `${data.first_name || ""} ${data.last_name || ""}`.trim(),
         });
 
-        const userData = {
+        // Create a new user document
+        const newUser = new User({
           _id: data.id,
-          email: primaryEmail || "no-email@example.com", // Fallback value
+          email: primaryEmailForCreate || "no-email@example.com", // Fallback value
+          firstName: data.first_name || "",
+          lastName: data.last_name || "",
+          image: data.image_url || "",
+          clerkData: data, // Store complete Clerk data
+        });
+
+        // Save the new user to MongoDB
+        await newUser.save();
+        console.log(`✅ New user ${data.id} created successfully in MongoDB`);
+        break;
+
+      case "user.updated":
+        // Handle user updates
+        console.log("📝 User update event received:", data.id);
+
+        // Find primary email
+        const primaryEmailForUpdate = data.email_addresses?.find(
+          (email) => email.id === data.primary_email_address_id
+        )?.email_address;
+
+        if (!primaryEmailForUpdate) {
+          console.warn("No primary email found for updated user:", data.id);
+        }
+
+        console.log("Updated user data:", {
+          id: data.id,
+          email: primaryEmailForUpdate,
+          name: `${data.first_name || ""} ${data.last_name || ""}`.trim(),
+        });
+
+        const userUpdateData = {
+          email: primaryEmailForUpdate || "no-email@example.com", // Fallback value
           firstName: data.first_name || "",
           lastName: data.last_name || "",
           image: data.image_url || "",
           clerkData: data, // Store complete Clerk data
         };
 
-        await User.findOneAndUpdate({ _id: data.id }, userData, {
-          upsert: true,
-          new: true,
-          runValidators: true,
-        });
+        // Update existing user
+        const updatedUser = await User.findOneAndUpdate(
+          { _id: data.id },
+          userUpdateData,
+          {
+            new: true,
+            runValidators: true,
+          }
+        );
 
-        console.log(`User ${data.id} upserted successfully`);
+        if (updatedUser) {
+          console.log(`✅ User ${data.id} updated successfully in MongoDB`);
+        } else {
+          console.warn(
+            `⚠️ User ${data.id} not found for update - creating new record`
+          );
+          // If user doesn't exist (rare edge case), create them
+          const newUserFromUpdate = new User({
+            _id: data.id,
+            ...userUpdateData,
+          });
+          await newUserFromUpdate.save();
+          console.log(`✅ User ${data.id} created from update event`);
+        }
         break;
 
       case "user.deleted":
