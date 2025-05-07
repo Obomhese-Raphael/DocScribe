@@ -10,25 +10,29 @@ import testRouter from "./routes/testRoute.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Connect to MongoDB
 connectDB();
 
 // Middleware
 app.use(cors());
 
-// Regular routes should use JSON parsing
-app.use(express.json());
+// IMPORTANT: Don't use express.json() globally as it will interfere with webhook raw body parsing
+// Instead, use it only for routes that need it
 
-// Define routes
+// Regular JSON parsing for most routes (EXCEPT webhooks)
+app.use("/api/users", express.json(), userRouter);
+app.use("/api/test", express.json(), testRouter);
+app.use("/api/contact", express.json(), contactRouter);
+app.use("/api/newsletter", express.json(), newsletterRouter);
+
+// Webhook route with raw body parsing handled inside the route
+app.use("/api/webhooks", webhookRouter);
+
+// Basic route
 app.get("/", (req, res) => {
   res.send("API is running...");
 });
-
-// Routes
-app.use("/api/webhooks", webhookRouter);
-app.use("/api/users", userRouter);
-app.use("/api/test", testRouter);
-app.use("/api/contact", contactRouter);
-app.use("/api/newsletter", newsletterRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
