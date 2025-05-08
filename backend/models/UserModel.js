@@ -10,7 +10,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    firstName: String, // Store separately for easier access
+    firstName: String,
     lastName: String,
     image: String,
     clerkData: {
@@ -26,6 +26,7 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-const User = mongoose.model("User", userSchema);
+// Check if model already exists (important for serverless environments)
+const User = mongoose.models.User || mongoose.model("User", userSchema);
 
 export default User;
