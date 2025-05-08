@@ -6,6 +6,7 @@ import contactRouter from "./routes/contactRoute.js";
 import newsletterRouter from "./routes/newsletterRoute.js";
 import userRouter from "./routes/userRoute.js";
 
+// Initialise app
 const app = express();
 const PORT = process.env.PORT || 5000;
 
