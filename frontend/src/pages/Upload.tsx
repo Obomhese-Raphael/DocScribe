@@ -1,6 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
-import axios from 'axios';
 import {
   Upload,
   FileText,
@@ -11,23 +10,23 @@ import {
   AlertCircle,
   Loader
 } from 'lucide-react';
+import { uploadFile, uploadText } from '../services/api';
 
 interface FileWithPreview extends File {
   preview?: string;
 }
 
-interface AnalysisResult {
-  originalFile: string;
-  summaryDate: string;
-  summary: string;
+interface DocumentResponse {
+  id: string;
+  originalName: string;
+  fileType: string;
+  uploadDate: string;
 }
 
 interface UploadResponse {
+  success: boolean;
+  document: DocumentResponse;
   path: string;
-}
-
-interface AnalyzeResponse {
-  results: AnalysisResult;
 }
 
 const UploadPage = () => {
@@ -36,7 +35,8 @@ const UploadPage = () => {
   const [pastedText, setPastedText] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
-  const [analysisResults, setAnalysisResults] = useState<AnalysisResult | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState<boolean>(false);
+  const [uploadedDocument, setUploadedDocument] = useState<DocumentResponse | null>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
   // Maximum file size: 10MB
@@ -68,7 +68,8 @@ const UploadPage = () => {
 
     // Clear any previous errors and results
     setError(null);
-    setAnalysisResults(null);
+    setUploadSuccess(false);
+    setUploadedDocument(null);
 
     // Process accepted files
     const newFiles = acceptedFiles.map(file =>
@@ -105,30 +106,21 @@ const UploadPage = () => {
     try {
       setLoading(true);
       setError(null);
-      setAnalysisResults(null);
+      setUploadSuccess(false);
+      setUploadedDocument(null);
 
-      // Create a Blob from the text and convert to File object
-      const textBlob = new Blob([pastedText], { type: 'text/plain' });
-      const textFile = new Blob([textBlob], { type: 'text/plain' });
-      (textFile as any).name = 'pasted-text.txt';
+      // Upload text using our API service
+      const response = await uploadText(pastedText) as UploadResponse;
 
-      // Create form data
-      const formData = new FormData();
-      formData.append('document', textFile);
+      setUploadSuccess(true);
+      setUploadedDocument(response.document);
 
-      // Upload text as a file
-      const uploadResponse = await axios.post<UploadResponse>('http://localhost:5000/api/upload', formData);
+      // Clear text area after successful upload
+      setPastedText('');
 
-      // Analyze the uploaded text file
-      const analyzeResponse = await axios.post<AnalyzeResponse>('http://localhost:5000/api/analyze', {
-        filePath: uploadResponse.data.path,
-        fileType: 'text/plain'
-      });
-
-      setAnalysisResults(analyzeResponse.data.results);
     } catch (err: any) {
-      console.error('Error analyzing text:', err);
-      setError(err.response?.data?.error || 'Failed to analyze text');
+      console.error('Error uploading text:', err);
+      setError(err.response?.data?.error || 'Failed to upload text');
     } finally {
       setLoading(false);
     }
@@ -143,29 +135,25 @@ const UploadPage = () => {
     try {
       setLoading(true);
       setError(null);
-      setAnalysisResults(null);
+      setUploadSuccess(false);
+      setUploadedDocument(null);
 
-      // For now, we'll just analyze the first file
+      // For now, we'll just upload the first file
       // You could extend this to handle multiple files if needed
-      const fileToAnalyze = files[0];
+      const fileToUpload = files[0];
 
-      // Create form data
-      const formData = new FormData();
-      formData.append('document', fileToAnalyze);
+      // Upload file using our API service
+      const response = await uploadFile(fileToUpload) as UploadResponse;
 
-      // Upload file
-      const uploadResponse = await axios.post<UploadResponse>('http://localhost:5000/api/upload', formData);
+      setUploadSuccess(true);
+      setUploadedDocument(response.document);
 
-      // Analyze document
-      const analyzeResponse = await axios.post<AnalyzeResponse>('http://localhost:5000/api/analyze', {
-        filePath: uploadResponse.data.path,
-        fileType: fileToAnalyze.type
-      });
+      // Clear files after successful upload
+      setFiles([]);
 
-      setAnalysisResults(analyzeResponse.data.results);
     } catch (err: any) {
-      console.error('Error analyzing document:', err);
-      setError(err.response?.data?.error || 'Failed to analyze document');
+      console.error('Error uploading file:', err);
+      setError(err.response?.data?.error || 'Failed to upload file');
     } finally {
       setLoading(false);
     }
@@ -218,6 +206,14 @@ const UploadPage = () => {
           <div className="bg-red-50 text-red-600 p-4 flex items-center">
             <AlertCircle size={20} className="mr-2" />
             {error}
+          </div>
+        )}
+
+        {/* Success message */}
+        {uploadSuccess && (
+          <div className="bg-green-50 text-green-600 p-4 flex items-center">
+            <AlertCircle size={20} className="mr-2" />
+            Document uploaded successfully!
           </div>
         )}
 
@@ -291,11 +287,11 @@ const UploadPage = () => {
                   {loading ? (
                     <>
                       <Loader size={18} className="mr-2 animate-spin" />
-                      Processing...
+                      Uploading...
                     </>
                   ) : (
                     <>
-                      Analyze Documents
+                      Upload Document
                       <ArrowRight size={18} className="ml-2" />
                     </>
                   )}
@@ -330,11 +326,11 @@ const UploadPage = () => {
                   {loading ? (
                     <>
                       <Loader size={18} className="mr-2 animate-spin" />
-                      Processing...
+                      Uploading...
                     </>
                   ) : (
                     <>
-                      Analyze Text
+                      Upload Text
                       <ArrowRight size={18} className="ml-2" />
                     </>
                   )}
@@ -344,20 +340,22 @@ const UploadPage = () => {
           )}
         </div>
 
-        {/* Analysis Results Section */}
-        {analysisResults && (
+        {/* Uploaded Document Information */}
+        {uploadedDocument && (
           <div className="border-t border-gray-200 p-6">
-            <h2 className="text-xl font-bold mb-4">Document Analysis</h2>
+            <h2 className="text-xl font-bold mb-4">Document Uploaded</h2>
             <div className="bg-gray-50 p-4 rounded-md">
               <p className="text-sm text-gray-500 mb-2">
-                File: {analysisResults.originalFile}
+                File: {uploadedDocument.originalName}
               </p>
               <p className="text-sm text-gray-500 mb-4">
-                Analyzed on: {new Date(analysisResults.summaryDate).toLocaleString()}
+                Uploaded on: {new Date(uploadedDocument.uploadDate).toLocaleString()}
               </p>
               <div className="bg-white p-4 rounded-md border border-gray-200">
-                <h3 className="font-medium text-gray-800 mb-2">Summary</h3>
-                <p className="text-gray-700 whitespace-pre-line">{analysisResults.summary}</p>
+                <h3 className="font-medium text-gray-800 mb-2">Status</h3>
+                <p className="text-gray-700">
+                  Your document has been uploaded successfully and stored in the database.
+                </p>
               </div>
             </div>
           </div>

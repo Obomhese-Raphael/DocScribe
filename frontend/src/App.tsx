@@ -9,6 +9,7 @@ import Newsletter from "./components/Newsletter";
 import Upload from "./pages/Upload";
 import HowItWorks from "./pages/HowItWorks";
 import ScrollToTop from "./components/ScrollToTop";
+import History from "./pages/History";
 
 const App = () => {
   const location = useLocation();
@@ -24,6 +25,7 @@ const App = () => {
         <Route path="/about" element={<About />} />
         <Route path="/upload" element={<Upload />} />
         <Route path="/how-it-works" element={<HowItWorks />} />
+        <Route path="/history" element={<History />} />
       </Routes>
       <Newsletter />
       <Footer />

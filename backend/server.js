@@ -4,8 +4,7 @@ import "dotenv/config";
 import connectDB from "./config/mongodb.js";
 import contactRouter from "./routes/contactRoute.js";
 import newsletterRouter from "./routes/newsletterRoute.js";
-import userRouter from "./routes/userRoute.js";
-
+import { POST as clerkWebhookHandler } from "./api/webhooks/clerk.js";
 // Initialise app
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -20,7 +19,12 @@ app.use(express.json()); // JSON parsing for all routes
 // Routes
 app.use("/api/contact", contactRouter);
 app.use("/api/newsletter", newsletterRouter);
-app.use("/api/users", userRouter);
+
+// Clerk webhook Route
+app.post("/api/webhook/clerk", clerkWebhookHandler);
+
+
+// API Routes
 
 // Basic route
 app.get("/", (req, res) => {
