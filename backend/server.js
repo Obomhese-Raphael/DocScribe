@@ -1,52 +1,28 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import "dotenv/config";
 import connectDB from "./config/mongodb.js";
-import contactRouter from "./routes/contactRoute.js";
-import newsletterRouter from "./routes/newsletterRoute.js";
-import { POST as clerkWebhookHandler } from "./api/webhooks/clerk.js";
-// Initialise app
-const app = express();
-const PORT = process.env.PORT || 5000;
 
-// Connect to MongoDB
+const app = express();
 connectDB();
 
 // Middleware
 app.use(cors());
-app.use(express.json()); // JSON parsing for all routes
+app.use(express.json());
 
-// Routes
-app.use("/api/contact", contactRouter);
-app.use("/api/newsletter", newsletterRouter);
+app.use("/api/clerk", express.raw({ type: "application/json" }));
+const PORT = process.env.PORT || 5000;
 
-// Clerk webhook Route
-app.post("/api/webhook/clerk", clerkWebhookHandler);
-
-
-// API Routes
-
-// Basic route
 app.get("/", (req, res) => {
   res.send("API is running...");
 });
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ message: "Route not found" });
-});
-
-// Error handler
+// Error handling middleware
 app.use((err, req, res, next) => {
-  console.error("Server error:", err);
-  res.status(500).json({ message: "Server error", error: err.message });
+  console.error(err.stack);
+  res.status(500).json({ error: "Something went wrong!" });
 });
 
-// Only start the server if not running in a serverless environment
-if (process.env.NODE_ENV !== "production") {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-}
-
-export default app; // For Vercel deployment
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
