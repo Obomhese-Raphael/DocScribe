@@ -32,7 +32,7 @@ const Contact = () => {
 
         // Simulate API call
         try {
-            const response = await axios.post('/api/contact/submit', formData, {
+            const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/contact/submit`, formData, {
                 headers: {
                     "Content-Type": "application/json"
                 }

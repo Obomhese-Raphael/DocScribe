@@ -3,9 +3,6 @@ import Newsletter from "../models/newsletterModel.js";
 export const submitNewsletter = async (req, res) => {
   try {
     const { email } = req.body;
-    const newNewsletter = new Newsletter({
-      email,
-    });
 
     const existingSubscriber = await Newsletter.findOne({ email });
     if (existingSubscriber) {
