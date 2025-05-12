@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { FaLightbulb, FaUsers, FaChartLine, FaCode } from 'react-icons/fa';
 
 type TeamMember = {
@@ -8,22 +7,7 @@ type TeamMember = {
     bio: string;
     image: string;
 };
-
-type StatItem = {
-    id: number;
-    value: number;
-    suffix?: string;
-    label: string;
-    duration?: number;
-};
-
 const AboutPage = () => {
-    const [stats, setStats] = useState<StatItem[]>([
-        { id: 1, value: 0, suffix: '+', label: 'Documents Processed', duration: 2 },
-        { id: 2, value: 0, suffix: '%', label: 'AI Accuracy Rate', duration: 1.5 },
-        { id: 3, value: 0, label: 'Hours of Processing Saved', duration: 1 },
-    ]);
-
     const teamMembers: TeamMember[] = [
         {
             id: 1,
@@ -71,42 +55,6 @@ const AboutPage = () => {
             description: 'Future API access to seamlessly integrate DocScribe into your existing workflows and applications.',
         },
     ];
-
-    useEffect(() => {
-        const finalValues = [15000, 99, 500];
-        const delays = [0.2, 0.5, 0.8];
-
-        const animations = stats.map((stat, index) => { // Removed explicit typing here
-            return setTimeout(() => {
-                const startTime = Date.now();
-                const duration = (stat.duration || 2) * 1000; // It's safe to access stat.duration
-                const endValue = finalValues[index];
-
-                const animate = () => {
-                    const elapsed = Date.now() - startTime;
-                    const progress = Math.min(elapsed / duration, 1);
-                    const easedProgress = easeOutQuad(progress);
-                    const currentValue = Math.floor(easedProgress * endValue);
-
-                    setStats(prev => prev.map(s =>
-                        s.id === stat.id ? { ...s, value: currentValue } : s
-                    ));
-
-                    if (progress < 1) {
-                        requestAnimationFrame(animate);
-                    }
-                };
-
-                requestAnimationFrame(animate);
-            }, delays[index] * 1000);
-        });
-
-        return () => animations.forEach((animation: string | number | NodeJS.Timeout | undefined) => clearTimeout(animation));
-    }, []);
-
-    const easeOutQuad = (t: number) => {
-        return t * (2 - t);
-    };
 
     return (
         <div className="bg-gray-50">
@@ -172,26 +120,6 @@ const AboutPage = () => {
                             </div>
                         ))}
                     </div>
-                </div>
-            </div>
-
-            {/* Stats Section */}
-            <div className="bg-indigo-700 py-16">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 gap-y-8 sm:grid-cols-3">
-                        {stats.map((stat) => (
-                            <div key={stat.id} className="text-center">
-                                <p className="text-5xl font-extrabold text-white">
-                                    {stat.value}
-                                    {stat.suffix}
-                                </p>
-                                <p className="mt-2 text-lg font-medium text-indigo-200">{stat.label}</p>
-                            </div>
-                        ))}
-                    </div>
-                    <p className="mt-8 text-center text-indigo-200 text-sm">
-                        *Since our inception in Nigeria.
-                    </p>
                 </div>
             </div>
         </div>
