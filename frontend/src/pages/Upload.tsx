@@ -184,16 +184,14 @@ const UploadPage = () => {
         {/* Tabs */}
         <div className="flex border-b">
           <button
-            className={`flex-1 py-4 px-6 text-center font-medium ${activeTab === 'upload' ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-500'
-              }`}
+            className={`flex-1 py-4 px-6 text-center font-medium ${activeTab === 'upload' ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-500'}`}
             onClick={() => setActiveTab('upload')}
           >
             <Upload className="inline mr-2" size={18} />
             Upload Files
           </button>
           <button
-            className={`flex-1 py-4 px-6 text-center font-medium ${activeTab === 'paste' ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-500'
-              }`}
+            className={`flex-1 py-4 px-6 text-center font-medium ${activeTab === 'paste' ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-500'}`}
             onClick={() => setActiveTab('paste')}
           >
             <Clipboard className="inline mr-2" size={18} />

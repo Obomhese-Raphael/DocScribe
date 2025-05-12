@@ -4,6 +4,7 @@ import "dotenv/config";
 import connectDB from "./config/mongodb.js";
 import contactRouter from "./routes/contactRoute.js";
 import newsletterRouter from "./routes/newsletterRoute.js";
+import uploadRouter from "./routes/uploadRoute.js";
 // Initialise app
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -18,6 +19,7 @@ app.use(express.json()); // JSON parsing for all routes
 // Routes
 app.use("/api/contact", contactRouter);
 app.use("/api/newsletter", newsletterRouter);
+app.use("/api", uploadRouter);
 
 // Basic route
 app.get("/", (req, res) => {

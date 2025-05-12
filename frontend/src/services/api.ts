@@ -1,29 +1,19 @@
+// src/services/api.ts
 import axios from 'axios';
 
 const API_URL = 'http://localhost:5000/api';
 
-// Create axios instance
-const api = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
-});
-
-// API functions
 export const uploadFile = async (file: File) => {
     const formData = new FormData();
-    formData.append('document', file);
-
-    // Set content type to multipart/form-data
-    const config = {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    };
+    formData.append('file', file);
 
     try {
-        const response = await api.post('/upload/file', formData, config);
+        const response = await axios.post(`${API_URL}/upload/file`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+
         return response.data;
     } catch (error) {
         console.error('Error uploading file:', error);
@@ -33,12 +23,10 @@ export const uploadFile = async (file: File) => {
 
 export const uploadText = async (text: string) => {
     try {
-        const response = await api.post('/upload/text', { text });
+        const response = await axios.post(`${API_URL}/upload/text`, { text });
         return response.data;
     } catch (error) {
         console.error('Error uploading text:', error);
         throw error;
     }
 };
-
-export default api;

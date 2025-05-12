@@ -1,6 +1,13 @@
 import path from "path";
 import fs from "fs";
-import Document from "../models/documentModel";
+import Document from "../models/documentModel.js";
+import { fileURLToPath } from "url";
+import mammoth from "mammoth";
+import * as pdfjs from "pdf-extraction"; // Import as namespace
+
+// Get directory name in ES module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const uploadDir = path.join(__dirname, "../uploads");
 if (!fs.existsSync(uploadDir)) {
@@ -10,12 +17,25 @@ if (!fs.existsSync(uploadDir)) {
 export const uploadFile = async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({
-        error: "No file uploaded",
-      });
+      return res.status(400).json({ error: "No file uploaded" });
     }
 
-    const { originalName, fileName, path: filePath, mimetype, size } = req.file;
+    // Correctly extract file information from req.file
+    // Note: The property names vary based on multer configuration
+    const originalName = req.file.originalname; // Not originalName
+    const fileName = req.file.filename;
+    const filePath = req.file.path;
+    const mimetype = req.file.mimetype;
+    const size = req.file.size;
+
+    // Debug log
+    console.log("File information:", {
+      originalName,
+      fileName,
+      filePath,
+      mimetype,
+      size,
+    });
 
     const document = new Document({
       originalName: originalName,
@@ -26,20 +46,36 @@ export const uploadFile = async (req, res) => {
       isProcessed: false,
     });
 
-    // If it's a text file or pasted text (text/plain), extract content directly
     if (mimetype === "text/plain") {
       try {
-        const content = fs.readFileSync(filePath, "utf8");
-        document.content = content;
+        document.content = fs.readFileSync(filePath, "utf8");
       } catch (error) {
         console.error("Error reading text file:", error);
       }
+    } else if (
+      mimetype ===
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ) {
+      try {
+        const buffer = fs.readFileSync(filePath);
+        const result = await mammoth.extractRawText({ buffer });
+        document.content = result.value;
+      } catch (error) {
+        console.error("Error reading DOCX file:", error);
+      }
+    } else if (mimetype === "application/pdf") {
+      try {
+        const dataBuffer = fs.readFileSync(filePath);
+        // Properly use the pdf-extraction library
+        const data = await pdfjs.extract(dataBuffer);
+        document.content = data.text;
+      } catch (error) {
+        console.error("Error reading PDF file:", error);
+      }
     }
 
-    // Save document to the database
     await document.save();
 
-    // Return success response
     res.status(201).json({
       success: true,
       document: {
@@ -51,17 +87,17 @@ export const uploadFile = async (req, res) => {
       path: filePath,
     });
   } catch (error) {
-    console.log("Error uploading File: ", error);
-    res.status(500).json({
-      error: "File upload failed",
-      details: error.message,
-    });
+    console.error("Error uploading File: ", error);
+    res
+      .status(500)
+      .json({ error: "File upload failed", details: error.message });
   }
 };
 
 export const uploadText = async (req, res) => {
   try {
     const { text } = req.body;
+
     if (!text || text.trim() === "") {
       return res.status(400).json({ error: "No text provided" });
     }
@@ -98,7 +134,7 @@ export const uploadText = async (req, res) => {
   } catch (error) {
     console.log("Error uploading text: ", error);
     res.status(500).json({
-      error: "Text upoload failed",
+      error: "Text upload failed",
       details: error.message,
     });
   }
