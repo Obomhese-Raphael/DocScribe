@@ -4,7 +4,14 @@ import "dotenv/config";
 import connectDB from "./config/mongodb.js";
 import contactRouter from "./routes/contactRoute.js";
 import newsletterRouter from "./routes/newsletterRoute.js";
-// import uploadRouter from "./routes/uploadRoute.js";
+import uploadRouter from "./routes/uploadRoute.js";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// Get directory name in ES module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 // Initialise app
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -16,10 +23,14 @@ connectDB();
 app.use(cors());
 app.use(express.json()); // JSON parsing for all routes
 
+// Create the uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, "uploads");
+app.use("/uploads", express.static(uploadsDir));
+
 // Routes
 app.use("/api/contact", contactRouter);
 app.use("/api/newsletter", newsletterRouter);
-// app.use("/api/upload", uploadRouter);
+app.use("/api/upload", uploadRouter);
 
 // Basic route
 app.get("/", (req, res) => {

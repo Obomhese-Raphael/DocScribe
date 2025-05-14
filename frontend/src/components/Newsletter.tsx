@@ -61,7 +61,7 @@ const Newsletter = () => {
                         </button>
                     </div>
                     {message && (
-                        <p className={`mt-2 text-sm 'text-green-500' : 'text-red-500'}`}>
+                        <p className={`mt-2 text-sm 'text-green-500' : 'text-red-500'} ${message.startsWith("Oops") ? 'text-red-500' : 'text-green-500'}`}>
                             {message}
                         </p>
                     )}

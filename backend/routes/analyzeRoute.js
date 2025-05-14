@@ -15,6 +15,7 @@ router.post("/", async (req, res) => {
 
     // Construct the full path to the uploaded file
     const filePath = path.join(process.cwd(), "uploads", filename);
+    console.log("File path:", filePath);
 
     // Verify file exists
     if (!fs.existsSync(filePath)) {
