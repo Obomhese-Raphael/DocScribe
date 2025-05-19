@@ -1,7 +1,6 @@
-import path from "path";
-import fs from "fs";
+// Modified uploadController.js for Vercel deployment
+
 import Document from "../models/documentModel.js";
-import { fileURLToPath } from "url";
 import mammoth from "mammoth";
 import pdfParse from "pdf-parse";
 import {
@@ -9,11 +8,7 @@ import {
   summarizeLongText,
 } from "../services/aiSummarization.js";
 
-// Get directory name in ES module
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Upload file
+// Upload file - Modified for serverless environment
 export const uploadFile = async (req, res) => {
   try {
     if (!req.file) {
@@ -22,24 +17,25 @@ export const uploadFile = async (req, res) => {
 
     const originalName = req.file.originalname;
     const fileName = req.file.filename;
-    const filePath = req.file.path;
     const mimetype = req.file.mimetype;
     const size = req.file.size;
+    const fileBuffer = req.file.buffer; // Use the buffer directly instead of file path
 
     const document = new Document({
       originalName: originalName,
       fileName: fileName,
-      filePath: filePath,
       fileType: mimetype,
       fileSize: size,
       isProcessed: false,
+      // Don't save filePath for serverless environment
     });
 
     let extractedText = "";
 
+    // Process file from buffer instead of file path
     if (mimetype === "text/plain") {
       try {
-        extractedText = fs.readFileSync(filePath, "utf8");
+        extractedText = fileBuffer.toString("utf8");
         document.content = extractedText;
       } catch (error) {
         console.error("Error reading text file:", error);
@@ -49,8 +45,7 @@ export const uploadFile = async (req, res) => {
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     ) {
       try {
-        const buffer = fs.readFileSync(filePath);
-        const result = await mammoth.extractRawText({ buffer });
+        const result = await mammoth.extractRawText({ buffer: fileBuffer });
         extractedText = result.value;
         document.content = extractedText;
       } catch (error) {
@@ -58,8 +53,7 @@ export const uploadFile = async (req, res) => {
       }
     } else if (mimetype === "application/pdf") {
       try {
-        const dataBuffer = fs.readFileSync(filePath);
-        const data = await pdfParse(dataBuffer);
+        const data = await pdfParse(fileBuffer);
         extractedText = data.text;
         document.content = extractedText;
       } catch (error) {
@@ -124,7 +118,6 @@ export const uploadFile = async (req, res) => {
         uploadDate: document.uploadDate,
         summary: document.summary || null,
       },
-      path: filePath,
     });
   } catch (error) {
     console.error("Error uploading File: ", error);
@@ -134,7 +127,7 @@ export const uploadFile = async (req, res) => {
   }
 };
 
-// Upload text
+// Upload text - Modified for serverless environment
 export const uploadText = async (req, res) => {
   try {
     const { text } = req.body;
@@ -143,28 +136,14 @@ export const uploadText = async (req, res) => {
       return res.status(400).json({ error: "No text provided" });
     }
 
-    // Define the upload directory
-    const uploadDir = path.join(__dirname, "uploads");
-
-    // Ensure the upload directory exists
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-
-    // Create a temporary file to store the text
-    const filename = `text_${Date.now()}.txt`;
-    const filePath = path.join(uploadDir, filename);
-
-    fs.writeFileSync(filePath, text);
-
     const document = new Document({
       originalName: "pasted-text.txt",
-      fileName: filename,
-      filePath: filePath,
+      fileName: `text_${Date.now()}.txt`,
       fileType: "text/plain",
       fileSize: Buffer.byteLength(text, "utf8"),
       content: text,
       isProcessed: false,
+      // Don't save filePath for serverless environment
     });
 
     // Generate summary for the text
@@ -172,10 +151,10 @@ export const uploadText = async (req, res) => {
       // For longer texts, use the long text handler
       if (text.length > 10000) {
         const summary = await summarizeLongText(text, {
-          maxLength: 500, // Get a detailed multi-paragraph summary
-          minLength: 150, // Ensure substantive content
-          doSample: true, // Use sampling for more varied language
-          temperature: 1.0, // Standard creativity
+          maxLength: 500,
+          minLength: 150,
+          doSample: true,
+          temperature: 1.0,
         });
 
         if (summary) {
@@ -186,13 +165,13 @@ export const uploadText = async (req, res) => {
           document.isProcessed = false;
         }
       } else {
-        // For shorter texts, use standard summarizer with detailed options
+        // For shorter texts, use standard summarizer
         const textForSummary = text.slice(0, 10000);
         const summary = await summarizeText(textForSummary, {
-          maxLength: 400, // Get a detailed multi-paragraph summary
-          minLength: 100, // Ensure substantive content
-          doSample: true, // Use sampling for more varied language
-          temperature: 1.0, // Standard creativity
+          maxLength: 400,
+          minLength: 100,
+          doSample: true,
+          temperature: 1.0,
         });
 
         if (summary) {
@@ -221,7 +200,6 @@ export const uploadText = async (req, res) => {
         uploadDate: document.uploadDate,
         summary: document.summary || null,
       },
-      path: filePath,
     });
   } catch (error) {
     console.log("Error uploading text: ", error);
@@ -232,11 +210,13 @@ export const uploadText = async (req, res) => {
   }
 };
 
-// Update the summarizeFileById function with configurable summarization:
+// The rest of your controller methods need similar modifications to avoid file system operations
+// Here's the updated summarizeFileById function:
+
 export const summarizeFileById = async (req, res) => {
   try {
     const { id } = req.params;
-    const { summaryOptions } = req.body; // Allow passing options from frontend
+    const { summaryOptions } = req.body;
 
     const document = await Document.findById(id);
 
@@ -304,39 +284,6 @@ export const summarizeFileById = async (req, res) => {
   }
 };
 
-// The other controller methods remain unchanged
-export const deleteFile = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const document = await Document.findById(id);
-    if (!document) {
-      return res.status(404).json({ error: "File not found" });
-    }
-
-    // Delete the document from MongoDB
-    await Document.findByIdAndDelete(id);
-
-    // Optional: Delete the actual file from the server's file system
-    if (document.filePath) {
-      try {
-        fs.unlinkSync(document.filePath);
-      } catch (fileDeleteError) {
-        console.error("Error deleting file from file system:", fileDeleteError);
-        // We don't want to fail the entire request if file deletion fails,
-        // so we just log the error.
-      }
-    }
-
-    return res.status(200).json({ message: "File deleted successfully" });
-  } catch (error) {
-    console.error("Error deleting file:", error);
-    return res
-      .status(500)
-      .json({ error: "File deletion failed", details: error.message });
-  }
-};
-
 // Get all files
 export const getAllFiles = async (req, res) => {
   try {
@@ -379,5 +326,29 @@ export const getFileContentById = async (req, res) => {
   } catch (error) {
     console.error("Error fetching file content:", error);
     res.status(500).json({ error: "Failed to fetch file content" });
+  }
+};
+
+// Delete file - Modified for serverless environment
+export const deleteFile = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const document = await Document.findById(id);
+    if (!document) {
+      return res.status(404).json({ error: "File not found" });
+    }
+
+    // Delete the document from MongoDB
+    await Document.findByIdAndDelete(id);
+
+    // No file system operations needed
+
+    return res.status(200).json({ message: "File deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting file:", error);
+    return res
+      .status(500)
+      .json({ error: "File deletion failed", details: error.message });
   }
 };
