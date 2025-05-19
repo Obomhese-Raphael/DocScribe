@@ -6,7 +6,7 @@ const Newsletter = () => {
     const [email, setEmail] = useState('');
     const [message, setMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
-
+    const backendUrl = import.meta.env.VITE_API_BASE_URL;
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setMessage('');
@@ -19,7 +19,7 @@ const Newsletter = () => {
         setIsSubmitting(true);
         // Simulate API call to subscribe to the newsletter
         try {
-            const response = await axios.post("/api/newsletter/subscribe", { email });
+            const response = await axios.post(`${backendUrl}/api/newsletter/subscribe`, { email });
             setMessage("Successfully subscribed to weekly newsletter");
             toast("Successfully subscribed to weekly newsletter ✅")
             console.log(response);

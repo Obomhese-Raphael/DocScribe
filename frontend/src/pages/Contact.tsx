@@ -17,6 +17,7 @@ const Contact = () => {
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitSuccess, setSubmitSuccess] = useState(false);
+    const backendUrl = import.meta.env.VITE_API_BASE_URL;
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -32,7 +33,7 @@ const Contact = () => {
 
         // Simulate API call
         try {
-            const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/contact/submit`, formData, {
+            const response = await axios.post(`${backendUrl}/api/contact/submit`, formData, {
                 headers: {
                     "Content-Type": "application/json"
                 }

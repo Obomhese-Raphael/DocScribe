@@ -1,7 +1,8 @@
 // src/services/api.ts
 import axios from 'axios';
-
-const API_URL = 'http://localhost:5000/api';
+const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+const API_URL = `${backendUrl}/api`;
+// const API_URL = 'http://localhost:5000/api';
 
 export const uploadFile = async (file: File) => {
   const formData = new FormData();
