@@ -15,14 +15,29 @@ const Newsletter = () => {
             setMessage('Please enter a valid email');
             return;
         }
-
+        if (email.length < 5) {
+            setMessage('Email must be at least 5 characters long');
+            return;
+        }
+        if (email.length > 50) {
+            setMessage('Email must be less than 50 characters long');
+            return;
+        }
+        
         setIsSubmitting(true);
         // Simulate API call to subscribe to the newsletter
         try {
             const response = await axios.post(`${backendUrl}/api/newsletter/subscribe`, { email });
             setMessage("Successfully subscribed to weekly newsletter");
-            toast("Successfully subscribed to weekly newsletter ✅")
-            console.log(response);
+            toast("Successfully subscribed to weekly newsletter ✅");
+            // Clear the email input after successful subscription
+            setEmail('');
+            // Clear the message after a few seconds
+            setTimeout(() => {
+                setMessage('');
+            }, 5000);
+            // Do something with the response if needed
+            console.log('Subscription response:', response.data);
         } catch (error: any) {
             console.error('Subscription error:', error.message);
             setMessage('Oops! Something went wrong. Please try again later.');
