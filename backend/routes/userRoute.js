@@ -111,7 +111,6 @@ export async function POST(req) {
     case "user.created":
       try {
         const newUser = await User.create(userData);
-        console.log("User created:", newUser);
       } catch (error) {
         console.error("Error creating user:", error);
       }
@@ -121,7 +120,6 @@ export async function POST(req) {
         const updatedUser = await User.findByIdAndUpdate(data.id, userData, {
           new: true,
         });
-        console.log("User updated:", updatedUser);
       } catch (error) {
         console.error("Error updating user:", error);
       }
@@ -129,7 +127,6 @@ export async function POST(req) {
     case "user.deleted":
       try {
         await User.findByIdAndDelete(data.id);
-        console.log("User deleted:", data.id);
       } catch (error) {
         console.error("Error deleting user:", error);
       }

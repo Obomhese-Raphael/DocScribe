@@ -1,11 +1,10 @@
-// Modified uploadController.js for Vercel deployment
-
 import Document from "../models/documentModel.js";
 import mammoth from "mammoth";
 import pdfParse from "pdf-parse";
 import {
   summarizeText,
   summarizeLongText,
+  fallbackSummarize,
 } from "../services/aiSummarization.js";
 
 // Upload file - Modified for serverless environment
@@ -16,7 +15,9 @@ export const uploadFile = async (req, res) => {
     }
 
     const originalName = req.file.originalname;
-    const fileName = req.file.filename;
+    const fileName =
+      req.file.filename ||
+      `file_${Date.now()}_${originalName.replace(/\s+/g, "_")}`;
     const mimetype = req.file.mimetype;
     const size = req.file.size;
     const fileBuffer = req.file.buffer; // Use the buffer directly instead of file path
@@ -39,6 +40,7 @@ export const uploadFile = async (req, res) => {
         document.content = extractedText;
       } catch (error) {
         console.error("Error reading text file:", error);
+        extractedText = ""; // Reset on error
       }
     } else if (
       mimetype ===
@@ -50,6 +52,7 @@ export const uploadFile = async (req, res) => {
         document.content = extractedText;
       } catch (error) {
         console.error("Error reading DOCX file:", error);
+        extractedText = ""; // Reset on error
       }
     } else if (mimetype === "application/pdf") {
       try {
@@ -58,53 +61,66 @@ export const uploadFile = async (req, res) => {
         document.content = extractedText;
       } catch (error) {
         console.error("Error reading PDF file:", error);
+        extractedText = ""; // Reset on error
       }
     }
 
     // Generate summary if we have content
     if (extractedText && extractedText.trim().length > 0) {
       try {
+        let summary = "";
+
         // For larger documents, use the long text handler
         if (extractedText.length > 10000) {
-          const summary = await summarizeLongText(extractedText, {
+          summary = await summarizeLongText(extractedText, {
             maxLength: 500, // Get a substantial multi-paragraph summary
             minLength: 150, // Ensure it's not too short
             doSample: true, // Use sampling for natural language
             temperature: 1.0, // Standard creativity
             repetitionPenalty: 1.2, // Avoid repetition
           });
-
-          if (summary) {
-            document.summary = summary;
-            document.isProcessed = true;
-          } else {
-            document.summary = "Summary generation failed";
-            document.isProcessed = false;
-          }
         } else {
-          // For shorter texts, use regular summarizer with detailed options
+          // For shorter texts, use regular summarizer
           const textForSummary = extractedText.slice(0, 10000);
-          const summary = await summarizeText(textForSummary, {
+          summary = await summarizeText(textForSummary, {
             maxLength: 400, // Get a detailed multi-paragraph summary
             minLength: 100, // Ensure substantive content
             doSample: true, // Use sampling for natural language
             numBeams: 4, // Use beam search for quality
             temperature: 1.0, // Standard creativity
           });
+        }
 
-          if (summary) {
-            document.summary = summary;
-            document.isProcessed = true;
-          } else {
-            document.summary = "Summary generation failed";
-            document.isProcessed = false;
-          }
+        // If the API fails, we'll get a fallback summary which won't be empty
+        if (summary) {
+          document.summary = summary;
+          document.isProcessed = true;
+        } else {
+          // This shouldn't happen, but just in case
+          const fallbackSummaryText = fallbackSummarize(
+            extractedText.slice(0, 10000)
+          );
+          document.summary = fallbackSummaryText;
+          document.isProcessed = true;
         }
       } catch (summaryError) {
         console.error("Error generating summary:", summaryError);
-        document.summary = "Error during summarization";
-        document.isProcessed = false;
+        // Always use fallback summarization on error
+        try {
+          const fallbackSummaryText = fallbackSummarize(
+            extractedText.slice(0, 10000)
+          );
+          document.summary = fallbackSummaryText;
+          document.isProcessed = true;
+        } catch (fallbackError) {
+          console.error("Even fallback summarization failed:", fallbackError);
+          document.summary = "Document received but summarization unavailable.";
+          document.isProcessed = false;
+        }
       }
+    } else {
+      document.summary = "No text content available to summarize.";
+      document.isProcessed = false;
     }
 
     await document.save();
@@ -148,44 +164,48 @@ export const uploadText = async (req, res) => {
 
     // Generate summary for the text
     try {
+      let summary = "";
+
       // For longer texts, use the long text handler
       if (text.length > 10000) {
-        const summary = await summarizeLongText(text, {
+        summary = await summarizeLongText(text, {
           maxLength: 500,
           minLength: 150,
           doSample: true,
           temperature: 1.0,
         });
-
-        if (summary) {
-          document.summary = summary;
-          document.isProcessed = true;
-        } else {
-          document.summary = "Summary generation failed";
-          document.isProcessed = false;
-        }
       } else {
         // For shorter texts, use standard summarizer
         const textForSummary = text.slice(0, 10000);
-        const summary = await summarizeText(textForSummary, {
+        summary = await summarizeText(textForSummary, {
           maxLength: 400,
           minLength: 100,
           doSample: true,
           temperature: 1.0,
         });
+      }
 
-        if (summary) {
-          document.summary = summary;
-          document.isProcessed = true;
-        } else {
-          document.summary = "Summary generation failed";
-          document.isProcessed = false;
-        }
+      if (summary) {
+        document.summary = summary;
+        document.isProcessed = true;
+      } else {
+        // Use fallback summarization as a backup
+        const fallbackSummaryText = fallbackSummarize(text.slice(0, 10000));
+        document.summary = fallbackSummaryText;
+        document.isProcessed = true;
       }
     } catch (summaryError) {
       console.error("Error generating summary:", summaryError);
-      document.summary = "Error during summarization";
-      document.isProcessed = false;
+      // Always use fallback summarization on error
+      try {
+        const fallbackSummaryText = fallbackSummarize(text.slice(0, 10000));
+        document.summary = fallbackSummaryText;
+        document.isProcessed = true;
+      } catch (fallbackError) {
+        console.error("Even fallback summarization failed:", fallbackError);
+        document.summary = "Document received but summarization unavailable.";
+        document.isProcessed = false;
+      }
     }
 
     await document.save();
@@ -210,9 +230,7 @@ export const uploadText = async (req, res) => {
   }
 };
 
-// The rest of your controller methods need similar modifications to avoid file system operations
-// Here's the updated summarizeFileById function:
-
+// Summarize file by ID - Updated with better error handling
 export const summarizeFileById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -263,17 +281,41 @@ export const summarizeFileById = async (req, res) => {
           isProcessed: true,
         });
       } else {
-        return res.status(500).json({
-          error: "No summary generated",
-          details: "The summarization API returned empty response",
+        // Fallback to basic summarization
+        const fallbackSummaryText = fallbackSummarize(text.slice(0, 10000));
+        document.summary = fallbackSummaryText;
+        document.isProcessed = true;
+        await document.save();
+
+        return res.status(200).json({
+          success: true,
+          summary: fallbackSummaryText,
+          isProcessed: true,
+          note: "Used fallback summarization method",
         });
       }
     } catch (apiError) {
       console.error("Summarization API error:", apiError);
-      return res.status(502).json({
-        error: "Summarization service unavailable",
-        details: apiError.message,
-      });
+
+      // Fallback to basic summarization
+      try {
+        const fallbackSummaryText = fallbackSummarize(text.slice(0, 10000));
+        document.summary = fallbackSummaryText;
+        document.isProcessed = true;
+        await document.save();
+
+        return res.status(200).json({
+          success: true,
+          summary: fallbackSummaryText,
+          isProcessed: true,
+          note: "Used fallback summarization due to API error",
+        });
+      } catch (fallbackError) {
+        return res.status(500).json({
+          error: "Summarization failed",
+          details: fallbackError.message,
+        });
+      }
     }
   } catch (error) {
     console.error("Error summarizing file content:", error);

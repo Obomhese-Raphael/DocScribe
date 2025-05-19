@@ -117,6 +117,10 @@ const UploadPage = () => {
 
       // Clear text area after successful upload
       setPastedText('');
+      // Clear the success message after a few seconds
+      setTimeout(() => {
+        setUploadSuccess(false);
+      }, 5000);
 
     } catch (err: any) {
       console.error('Error uploading text:', err);

@@ -7,11 +7,6 @@ dotenv.config();
 /**
  * Summarizes text using the Hugging Face API (BART-large-CNN model)
  * @param {string} text - The text to summarize
- * @returns {Promise<string>} - The summarized text
- */
-/**
- * Summarizes text using the Hugging Face API (BART-large-CNN model)
- * @param {string} text - The text to summarize
  * @param {Object} options - Configuration options for summarization
  * @param {number} options.maxLength - Maximum length of the summary (default: 400)
  * @param {number} options.minLength - Minimum length of the summary (default: 100)
@@ -30,6 +25,13 @@ export const summarizeText = async (text, options = {}) => {
     // Check if text is provided and not empty
     if (!text || text.trim() === "") {
       throw new Error("No text provided for summarization");
+    }
+
+    // Check if API key is available
+    if (!process.env.HUGGINGFACE_API_KEY) {
+      console.error("Missing HUGGINGFACE_API_KEY environment variable");
+      // Fall back to basic summarization instead of failing
+      return fallbackSummarize(text);
     }
 
     // Default options for longer, more detailed summaries
@@ -80,6 +82,10 @@ export const summarizeText = async (text, options = {}) => {
             length_penalty: summarizationOptions.lengthPenalty,
             no_repeat_ngram_size: summarizationOptions.noRepeatNgramSize,
           },
+          options: {
+            wait_for_model: true, // Wait if the model is currently loading
+            use_cache: true, // Use cached results if available
+          },
         }),
       }
     );
@@ -94,7 +100,10 @@ export const summarizeText = async (text, options = {}) => {
       } catch {
         errorData = { error: errorText };
       }
-      throw new Error(`Hugging Face API error: ${JSON.stringify(errorData)}`);
+
+      // If the API fails, fall back to basic summarization
+      console.log("Falling back to basic summarization due to API error");
+      return fallbackSummarize(text);
     }
 
     const result = await response.json();
@@ -104,13 +113,18 @@ export const summarizeText = async (text, options = {}) => {
     // The response format should be an array with objects containing the summary_text field
     if (Array.isArray(result) && result.length > 0 && result[0].summary_text) {
       return result[0].summary_text;
+    } else if (result && result.summary_text) {
+      // Handle alternative response format
+      return result.summary_text;
     } else {
       console.error("Unexpected API response format:", result);
-      throw new Error("Unexpected response format from summarization API");
+      // Fall back to basic summarization if API returns unexpected format
+      return fallbackSummarize(text);
     }
   } catch (error) {
     console.error("Error in summarizeText:", error);
-    throw error;
+    // Always fall back to basic summarization on any error
+    return fallbackSummarize(text);
   }
 };
 
@@ -124,6 +138,12 @@ export const summarizeTextAlternative = async (text) => {
     // Check if text is provided and not empty
     if (!text || text.trim() === "") {
       throw new Error("No text provided for summarization");
+    }
+
+    // Check if API key is available
+    if (!process.env.HUGGINGFACE_API_KEY) {
+      console.error("Missing HUGGINGFACE_API_KEY environment variable");
+      return fallbackSummarize(text);
     }
 
     // Truncate text if it's too long (BART model has input limits)
@@ -149,25 +169,23 @@ export const summarizeTextAlternative = async (text) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      let errorData;
-      try {
-        errorData = JSON.parse(errorText);
-      } catch {
-        errorData = { error: errorText };
-      }
-      throw new Error(`Hugging Face API error: ${JSON.stringify(errorData)}`);
+      console.error("API Error response:", errorText);
+      return fallbackSummarize(text);
     }
 
     const result = await response.json();
 
     if (Array.isArray(result) && result.length > 0 && result[0].summary_text) {
       return result[0].summary_text;
+    } else if (result && result.summary_text) {
+      return result.summary_text;
     } else {
-      throw new Error("Failed to extract summary from API response");
+      console.error("Unexpected API response format:", result);
+      return fallbackSummarize(text);
     }
   } catch (error) {
     console.error("Error in summarizeTextAlternative:", error);
-    throw error;
+    return fallbackSummarize(text);
   }
 };
 
@@ -227,7 +245,7 @@ export const summarizeLongText = async (text, options = {}) => {
         } catch (error) {
           console.error("Error summarizing chunk:", error);
           // Return a minimal summary for failed chunks to avoid breaking the whole process
-          return "Content summarization failed for this section.";
+          return fallbackSummarize(chunk);
         }
       })
     );
@@ -238,13 +256,18 @@ export const summarizeLongText = async (text, options = {}) => {
     // If the combined summary is still too long, summarize it again
     if (combinedSummary.length > maxLength) {
       // Options for the final summary - use the original requested options
-      return await summarizeText(combinedSummary, options);
+      try {
+        return await summarizeText(combinedSummary, options);
+      } catch (error) {
+        console.error("Error summarizing combined text:", error);
+        return fallbackSummarize(combinedSummary);
+      }
     }
 
     return combinedSummary;
   } catch (error) {
     console.error("Error in summarizeLongText:", error);
-    throw error;
+    return fallbackSummarize(text);
   }
 };
 
@@ -282,6 +305,15 @@ export const fallbackSummarize = (text) => {
   // If summary is still very short, add more sentences
   if (summary.length < 100 && sentences.length > 3) {
     summary += " " + sentences[1].trim();
+
+    // Add more sentences if needed to reach a reasonable length
+    let i = 2;
+    while (summary.length < 150 && i < Math.min(sentences.length, 8)) {
+      if (i !== middleIndex && i !== sentences.length - 1) {
+        summary += " " + sentences[i].trim();
+      }
+      i++;
+    }
   }
 
   return summary;

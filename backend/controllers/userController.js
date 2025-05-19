@@ -14,12 +14,10 @@ export const addUser = async (req, res) => {
         // You might need to adjust how 'image' is handled if this route is used for initial creation
       });
       await newUser.save();
-      console.log("New user saved via /sync:", newUser);
     } else {
       existingUser.email = email;
       existingUser.name = `${firstName} ${lastName}`.trim();
       await existingUser.save();
-      console.log("Existing user updated via /sync:", existingUser);
     }
 
     res.status(200).json({ message: "User data synced successfully" });
