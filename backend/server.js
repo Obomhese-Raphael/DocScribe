@@ -7,6 +7,7 @@ import newsletterRouter from "./routes/newsletterRoute.js";
 import uploadRouter from "./routes/uploadRoute.js";
 import path from "path";
 import { fileURLToPath } from "url";
+import adminRouter from "./routes/adminRoutes.js";
 
 // Get directory name in ES module
 const __filename = fileURLToPath(import.meta.url);
@@ -31,6 +32,7 @@ app.use("/uploads", express.static(uploadsDir));
 app.use("/api/contact", contactRouter);
 app.use("/api/newsletter", newsletterRouter);
 app.use("/api/upload", uploadRouter);
+app.use("/api/admin", adminRouter); 
 
 // Basic route
 app.get("/", (req, res) => {

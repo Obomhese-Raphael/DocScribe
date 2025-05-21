@@ -2,7 +2,6 @@
 import axios from 'axios';
 const backendUrl = import.meta.env.VITE_API_BASE_URL;
 const API_URL = `${backendUrl}/api`;
-console.log("API_URL", API_URL);
 
 export const uploadFile = async (file: File) => {
   const formData = new FormData();

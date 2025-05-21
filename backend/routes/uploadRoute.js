@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  deleteAllFiles,
   deleteFile,
   getAllFiles,
   getFileById,
@@ -12,6 +13,7 @@ import { upload } from "../middleware/multerConfig.js";
 import multer from "multer"; 
 import path from "path";
 import { fileURLToPath } from "url";
+import { adminAuthMiddleware, simpleAdminCheck } from "../middleware/adminMiddleware.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,5 +28,6 @@ uploadRouter.get("/get-all", getAllFiles);
 uploadRouter.get("/get-file/:id", getFileById);
 uploadRouter.get("/get-content/:id", getFileContentById);
 uploadRouter.get("/summarize/:id", summarizeFileById);
+uploadRouter.delete("/delete-all", adminAuthMiddleware, deleteAllFiles);
 
 export default uploadRouter;

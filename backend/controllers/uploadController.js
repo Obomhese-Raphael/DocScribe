@@ -394,3 +394,24 @@ export const deleteFile = async (req, res) => {
       .json({ error: "File deletion failed", details: error.message });
   }
 };
+
+// Delete all files - Modified for serverless environment
+export const deleteAllFiles = async (req, res) => {
+  try {
+    // Perform deletion of all documents
+    const result = await Document.deleteMany({});
+
+    // Return success response with count
+    return res.status(200).json({
+      success: true,
+      message: "All files deleted successfully",
+      deletedCount: result.deletedCount,
+    });
+  } catch (error) {
+    console.error("Error deleting all files:", error);
+    return res.status(500).json({
+      error: "Failed to delete all files",
+      details: error.message,
+    });
+  }
+};
