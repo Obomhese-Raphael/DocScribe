@@ -27,11 +27,11 @@ export const summarizeText = async (text, options = {}) => {
       throw new Error("No text provided for summarization");
     }
 
+    console.log("HUGGINGFACE_API_KEY: ", process.env.HUGGINGFACE_API_KEY);
+
     // Check if API key is available
     if (!process.env.HUGGINGFACE_API_KEY) {
       console.error("Missing HUGGINGFACE_API_KEY environment variable");
-      // Fall back to basic summarization instead of failing
-      return fallbackSummarize(text);
     }
 
     // Default options for longer, more detailed summaries
@@ -61,7 +61,7 @@ export const summarizeText = async (text, options = {}) => {
     );
 
     const response = await fetch(
-      "https://api-inference.huggingface.co/models/facebook/bart-large-cnn",
+      "https://router.huggingface.co/hf-inference/models/facebook/bart-large-cnn",
       {
         headers: {
           Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
@@ -102,8 +102,7 @@ export const summarizeText = async (text, options = {}) => {
       }
 
       // If the API fails, fall back to basic summarization
-      console.log("Falling back to basic summarization due to API error");
-      return fallbackSummarize(text);
+      console.log("API FAILED");
     }
 
     const result = await response.json();
@@ -118,74 +117,9 @@ export const summarizeText = async (text, options = {}) => {
       return result.summary_text;
     } else {
       console.error("Unexpected API response format:", result);
-      // Fall back to basic summarization if API returns unexpected format
-      return fallbackSummarize(text);
     }
   } catch (error) {
     console.error("Error in summarizeText:", error);
-    // Always fall back to basic summarization on any error
-    return fallbackSummarize(text);
-  }
-};
-
-/**
- * Alternative implementation using the query parameter format
- * @param {string} text - The text to summarize
- * @returns {Promise<string>} - The summarized text
- */
-export const summarizeTextAlternative = async (text) => {
-  try {
-    // Check if text is provided and not empty
-    if (!text || text.trim() === "") {
-      throw new Error("No text provided for summarization");
-    }
-
-    // Check if API key is available
-    if (!process.env.HUGGINGFACE_API_KEY) {
-      console.error("Missing HUGGINGFACE_API_KEY environment variable");
-      return fallbackSummarize(text);
-    }
-
-    // Truncate text if it's too long (BART model has input limits)
-    const truncatedText = text.slice(0, 4000);
-
-    const response = await fetch(
-      "https://api-inference.huggingface.co/models/facebook/bart-large-cnn",
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        method: "POST",
-        body: JSON.stringify({
-          inputs: truncatedText,
-          options: {
-            wait_for_model: true, // Wait if the model is currently loading
-            use_cache: true, // Use cached results if available
-          },
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("API Error response:", errorText);
-      return fallbackSummarize(text);
-    }
-
-    const result = await response.json();
-
-    if (Array.isArray(result) && result.length > 0 && result[0].summary_text) {
-      return result[0].summary_text;
-    } else if (result && result.summary_text) {
-      return result.summary_text;
-    } else {
-      console.error("Unexpected API response format:", result);
-      return fallbackSummarize(text);
-    }
-  } catch (error) {
-    console.error("Error in summarizeTextAlternative:", error);
-    return fallbackSummarize(text);
   }
 };
 
@@ -244,8 +178,6 @@ export const summarizeLongText = async (text, options = {}) => {
           return await summarizeText(chunk, chunkOptions);
         } catch (error) {
           console.error("Error summarizing chunk:", error);
-          // Return a minimal summary for failed chunks to avoid breaking the whole process
-          return fallbackSummarize(chunk);
         }
       })
     );
@@ -260,61 +192,11 @@ export const summarizeLongText = async (text, options = {}) => {
         return await summarizeText(combinedSummary, options);
       } catch (error) {
         console.error("Error summarizing combined text:", error);
-        return fallbackSummarize(combinedSummary);
       }
     }
 
     return combinedSummary;
   } catch (error) {
     console.error("Error in summarizeLongText:", error);
-    return fallbackSummarize(text);
   }
-};
-
-/**
- * Fallback summarization function that uses a basic extractive method
- * when the API is unavailable
- * @param {string} text - The text to summarize
- * @returns {string} - A basic summary
- */
-export const fallbackSummarize = (text) => {
-  if (!text || text.trim() === "") {
-    return "No content available to summarize.";
-  }
-
-  // Split into sentences (basic approach)
-  const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
-
-  // If very short text, just return it
-  if (sentences.length <= 3) {
-    return text;
-  }
-
-  // Take the first sentence (usually contains the main point)
-  let summary = sentences[0].trim();
-
-  // Add a sentence from the middle
-  const middleIndex = Math.floor(sentences.length / 2);
-  summary += " " + sentences[middleIndex].trim();
-
-  // Add the last sentence (often contains a conclusion)
-  if (sentences.length > 2) {
-    summary += " " + sentences[sentences.length - 1].trim();
-  }
-
-  // If summary is still very short, add more sentences
-  if (summary.length < 100 && sentences.length > 3) {
-    summary += " " + sentences[1].trim();
-
-    // Add more sentences if needed to reach a reasonable length
-    let i = 2;
-    while (summary.length < 150 && i < Math.min(sentences.length, 8)) {
-      if (i !== middleIndex && i !== sentences.length - 1) {
-        summary += " " + sentences[i].trim();
-      }
-      i++;
-    }
-  }
-
-  return summary;
 };

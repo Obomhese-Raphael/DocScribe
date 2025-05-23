@@ -8,6 +8,8 @@ import uploadRouter from "./routes/uploadRoute.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import adminRouter from "./routes/adminRoutes.js";
+import summaryRoute from "./routes/summaryRoute.js";
+import { errorHandler } from "./middleware/errorHandler.js";
 
 // Get directory name in ES module
 const __filename = fileURLToPath(import.meta.url);
@@ -23,6 +25,7 @@ connectDB();
 // Middleware
 app.use(cors());
 app.use(express.json()); // JSON parsing for all routes
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // Create the uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, "uploads");
@@ -32,7 +35,11 @@ app.use("/uploads", express.static(uploadsDir));
 app.use("/api/contact", contactRouter);
 app.use("/api/newsletter", newsletterRouter);
 app.use("/api/upload", uploadRouter);
-app.use("/api/admin", adminRouter); 
+app.use("/api/admin", adminRouter);
+app.use("/api/summaries", summaryRoute);
+
+// Error handling middleware
+app.use(errorHandler);
 
 // Basic route
 app.get("/", (req, res) => {

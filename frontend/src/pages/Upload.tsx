@@ -11,6 +11,7 @@ import {
   Loader
 } from 'lucide-react';
 import { uploadFile, uploadText } from '../services/api';
+import axios from 'axios';
 
 interface FileWithPreview extends File {
   preview?: string;
@@ -20,6 +21,7 @@ interface DocumentResponse {
   id: string;
   originalName: string;
   fileType: string;
+  summary: string;
   uploadDate: string;
 }
 
@@ -27,6 +29,10 @@ interface UploadResponse {
   success: boolean;
   document: DocumentResponse;
   path: string;
+}
+
+interface SummaryResponse {
+  summary: string,
 }
 
 const UploadPage = () => {
@@ -38,6 +44,7 @@ const UploadPage = () => {
   const [uploadSuccess, setUploadSuccess] = useState<boolean>(false);
   const [uploadedDocument, setUploadedDocument] = useState<DocumentResponse | null>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
+  const [documentSummary, setDocumentSummary] = useState<string | null>(null);
 
   // Maximum file size: 10MB
   const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -115,8 +122,10 @@ const UploadPage = () => {
       setUploadSuccess(true);
       setUploadedDocument(response.document);
 
-      // Clear text area after successful upload
-      setPastedText('');
+      // Fetch document summary after successful upload
+      await fetchDocumentSummary(response.document.id);
+      setDocumentSummary(response.document.summary)
+
       // Clear the success message after a few seconds
       setTimeout(() => {
         setUploadSuccess(false);
@@ -152,6 +161,9 @@ const UploadPage = () => {
       setUploadSuccess(true);
       setUploadedDocument(response.document);
 
+      // Fetch document summary after successful upload
+      await fetchDocumentSummary(response.document.id);
+
       // Clear files after successful upload
       setFiles([]);
 
@@ -181,7 +193,18 @@ const UploadPage = () => {
     if (bytes < 1024 ** 3) return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
     return `${(bytes / 1024 ** 3).toFixed(1)} GB`;
   };
-  
+
+  const fetchDocumentSummary = async (id: string) => {
+    try {
+      const response = await axios.get<SummaryResponse>(`/api/upload/get-summary/${id}`);
+      setDocumentSummary(response.data.summary);
+    } catch (error) {
+      console.error('Error fetching document summary:', error);
+      setTimeout(() => {
+        setError(null);
+      }, 5000);
+    }
+  }
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -355,12 +378,27 @@ const UploadPage = () => {
               <p className="text-sm text-gray-500 mb-4">
                 Uploaded on: {new Date(uploadedDocument.uploadDate).toLocaleString()}
               </p>
-              <div className="bg-white p-4 rounded-md border border-gray-200">
+              <div className="bg-white p-4 rounded-md border border-gray-200 mb-4">
                 <h3 className="font-medium text-gray-800 mb-2">Status</h3>
                 <p className="text-gray-700">
                   Your document has been uploaded successfully and stored in the database.
                 </p>
               </div>
+
+              {/* Document Summary Section */}
+              {documentSummary ? (
+                <div className="bg-white p-4 rounded-md border border-gray-200">
+                  <h3 className="font-medium text-gray-800 mb-2">Document Summary</h3>
+                  <p className="text-gray-700">{documentSummary}</p>
+                </div>
+              ) : (
+                <div className="bg-white p-4 rounded-md border border-gray-200">
+                  <h3 className="font-medium text-gray-800 mb-2">Document Summary</h3>
+                  <p className="text-gray-500 italic flex gap-10">
+                    Loading Summary ... <Loader />
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}

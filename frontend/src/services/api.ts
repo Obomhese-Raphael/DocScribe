@@ -13,8 +13,6 @@ export const uploadFile = async (file: File) => {
         'Content-Type': 'multipart/form-data',
       },
     });
-
-    console.log("RESPONSE", response);
     return response.data;
   } catch (error) {
     console.error('Error uploading file:', error);
@@ -25,7 +23,6 @@ export const uploadFile = async (file: File) => {
 export const uploadText = async (text: string) => {
   try {
     const response = await axios.post(`${API_URL}/upload/text`, { text });
-    console.log("RESPONSE", response.data);
     return response.data;
   } catch (error) {
     console.error('Error uploading text:', error);

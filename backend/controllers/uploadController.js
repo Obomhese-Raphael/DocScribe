@@ -4,7 +4,6 @@ import pdfParse from "pdf-parse";
 import {
   summarizeText,
   summarizeLongText,
-  fallbackSummarize,
 } from "../services/aiSummarization.js";
 
 // Upload file - Modified for serverless environment
@@ -90,33 +89,8 @@ export const uploadFile = async (req, res) => {
             temperature: 1.0, // Standard creativity
           });
         }
-
-        // If the API fails, we'll get a fallback summary which won't be empty
-        if (summary) {
-          document.summary = summary;
-          document.isProcessed = true;
-        } else {
-          // This shouldn't happen, but just in case
-          const fallbackSummaryText = fallbackSummarize(
-            extractedText.slice(0, 10000)
-          );
-          document.summary = fallbackSummaryText;
-          document.isProcessed = true;
-        }
-      } catch (summaryError) {
-        console.error("Error generating summary:", summaryError);
-        // Always use fallback summarization on error
-        try {
-          const fallbackSummaryText = fallbackSummarize(
-            extractedText.slice(0, 10000)
-          );
-          document.summary = fallbackSummaryText;
-          document.isProcessed = true;
-        } catch (fallbackError) {
-          console.error("Even fallback summarization failed:", fallbackError);
-          document.summary = "Document received but summarization unavailable.";
-          document.isProcessed = false;
-        }
+      } catch (error) {
+        console.log("Error in upload file: ");
       }
     } else {
       document.summary = "No text content available to summarize.";
@@ -189,23 +163,10 @@ export const uploadText = async (req, res) => {
         document.summary = summary;
         document.isProcessed = true;
       } else {
-        // Use fallback summarization as a backup
-        const fallbackSummaryText = fallbackSummarize(text.slice(0, 10000));
-        document.summary = fallbackSummaryText;
-        document.isProcessed = true;
+        console.log("Something is wrong 1");
       }
     } catch (summaryError) {
       console.error("Error generating summary:", summaryError);
-      // Always use fallback summarization on error
-      try {
-        const fallbackSummaryText = fallbackSummarize(text.slice(0, 10000));
-        document.summary = fallbackSummaryText;
-        document.isProcessed = true;
-      } catch (fallbackError) {
-        console.error("Even fallback summarization failed:", fallbackError);
-        document.summary = "Document received but summarization unavailable.";
-        document.isProcessed = false;
-      }
     }
 
     await document.save();
@@ -281,41 +242,17 @@ export const summarizeFileById = async (req, res) => {
           isProcessed: true,
         });
       } else {
-        // Fallback to basic summarization
-        const fallbackSummaryText = fallbackSummarize(text.slice(0, 10000));
-        document.summary = fallbackSummaryText;
-        document.isProcessed = true;
-        await document.save();
+        console.log("Something is wrong 2");
 
         return res.status(200).json({
           success: true,
-          summary: fallbackSummaryText,
+          summary: summary,
           isProcessed: true,
-          note: "Used fallback summarization method",
+          note: "Something is Wrong 3",
         });
       }
     } catch (apiError) {
       console.error("Summarization API error:", apiError);
-
-      // Fallback to basic summarization
-      try {
-        const fallbackSummaryText = fallbackSummarize(text.slice(0, 10000));
-        document.summary = fallbackSummaryText;
-        document.isProcessed = true;
-        await document.save();
-
-        return res.status(200).json({
-          success: true,
-          summary: fallbackSummaryText,
-          isProcessed: true,
-          note: "Used fallback summarization due to API error",
-        });
-      } catch (fallbackError) {
-        return res.status(500).json({
-          error: "Summarization failed",
-          details: fallbackError.message,
-        });
-      }
     }
   } catch (error) {
     console.error("Error summarizing file content:", error);
@@ -368,6 +305,26 @@ export const getFileContentById = async (req, res) => {
   } catch (error) {
     console.error("Error fetching file content:", error);
     res.status(500).json({ error: "Failed to fetch file content" });
+  }
+};
+
+// Get file summary by ID
+export const getFileSummaryById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const document = await Document.findById(id);
+    if (!document) {
+      return res.status(404).json({ error: "File not found" });
+    }
+    if (document.summary) {
+      console.log("Document Summary: ", document.summary);
+      return res.status(200).json({ summary: document.summary });
+    } else {
+      return res.status(404).json({ error: "Summary not found" });
+    }
+  } catch (error) {
+    console.error("Error fetching file summary:", error);
+    res.status(500).json({ error: "Failed to fetch file summary" });
   }
 };
 
