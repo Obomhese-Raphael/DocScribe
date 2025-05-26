@@ -62,7 +62,7 @@ const History = () => {
     const [summaryDocumentId, setSummaryDocumentId] = useState<string>("")
     const [documentContent, setDocumentContent] = useState<string>("");
     const [activeTab, setActiveTab] = useState<"summary" | "content">("summary");
-    const VITE_API_BASE_URL_DEV = import.meta.env.VITE_API_BASE_URL_DEV;
+    // const VITE_API_BASE_URL_DEV = import.meta.env.VITE_API_BASE_URL_DEV;
     const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
     useEffect(() => {
         fetchSummaries();
@@ -117,7 +117,8 @@ const History = () => {
 
     const handleViewSummary = (summary: Summary) => {
         setSelectedSummary(summary);
-        console.log(summary?._id)
+        console.log(summary?._id);
+        console.log(summaryDocumentId);
         fetchDocumentContent(summary?._id)
         setSummaryDocumentId(summary?._id);
         setActiveTab('summary');
