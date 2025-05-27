@@ -62,8 +62,8 @@ const History = () => {
     const [summaryDocumentId, setSummaryDocumentId] = useState<string>("")
     const [documentContent, setDocumentContent] = useState<string>("");
     const [activeTab, setActiveTab] = useState<"summary" | "content">("summary");
-    // const VITE_API_BASE_URL_DEV = import.meta.env.VITE_API_BASE_URL_DEV;
-    const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+    const VITE_API_BASE_URL_DEV = import.meta.env.VITE_API_BASE_URL_DEV;
+    // const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
     useEffect(() => {
         fetchSummaries();
     }, []);
@@ -79,7 +79,7 @@ const History = () => {
 
             // Updated API endpoint to match your backend structure
             const response = await axios.get<ApiResponse>(
-                `${VITE_API_BASE_URL}/api/summaries/history`
+                `${VITE_API_BASE_URL_DEV}/api/summaries/history`
             );
             console.log("RESPONSE: ", response);
             if (response.data.success) {
@@ -126,7 +126,7 @@ const History = () => {
 
     const fetchDocumentContent = async (id: string) => {
         try {
-            const response = await axios.get<SummaryApiResponse>(`${VITE_API_BASE_URL}/api/upload/get-content/${id}`);
+            const response = await axios.get<SummaryApiResponse>(`${VITE_API_BASE_URL_DEV}/api/upload/get-content/${id}`);
             if (!response) {
                 console.log("Invalid api endpoint")
             }
@@ -143,7 +143,7 @@ const History = () => {
     const handleDownload = async (summaryId: string, fileName: string) => {
         try {
             const response = await axios.get(
-                `${VITE_API_BASE_URL}/api/summaries/${summaryId}/download`,
+                `${VITE_API_BASE_URL_DEV}/api/summaries/${summaryId}/download`,
                 {
                     responseType: "blob",
                 }
@@ -178,7 +178,7 @@ const History = () => {
             const response = await axios.post<{
                 success: boolean;
                 shareableLink: string;
-            }>(`${VITE_API_BASE_URL}/api/summaries/${summaryId}/share`);
+            }>(`${VITE_API_BASE_URL_DEV}/api/summaries/${summaryId}/share`);
 
             if (response.data.success) {
                 // Update the summary with the shareable link
@@ -217,7 +217,7 @@ const History = () => {
         }
 
         try {
-            await axios.delete(`${VITE_API_BASE_URL}/api/summaries/${summaryId}`);
+            await axios.delete(`${VITE_API_BASE_URL_DEV}/api/summaries/${summaryId}`);
 
             // Remove the summary from the local state
             setSummaries((prevSummaries) =>

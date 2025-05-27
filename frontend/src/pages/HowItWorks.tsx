@@ -130,7 +130,7 @@ const HowItWorks = () => {
                 {/* Tech Stack */}
                 <div className="mt-16 text-center">
                     <h2 className="text-2xl font-bold text-gray-900 mb-6">Powered By</h2>
-                    <div className="flex cursor-pointer flex-wrap justify-center gap-8">
+                    <div className="flex cursor-pointer flex-wrap justify-center gap-8 border border-gray-200 p-6 rounded-lg shadow-lg bg-gray-50">
                         {[
                             { name: "Natural Language Processing", icon: "🧠" },
                             { name: "Transformer Models", icon: "⚡" },
@@ -140,9 +140,9 @@ const HowItWorks = () => {
                             <motion.div
                                 key={index}
                                 whileHover={{ scale: 1.05 }}
-                                className="bg-white p-4 rounded-lg shadow-md w-40"
+                                className="bg-white p-4 rounded-lg shadow-md w-100 h-50 text-center flex flex-col items-center transition-transform justify-center duration-300"
                             >
-                                <div className="text-3xl mb-2">{tech.icon}</div>
+                                <div className="text-3xl mb-2 text-center items-center">{tech.icon}</div>
                                 <h3 className="font-medium text-gray-800">{tech.name}</h3>
                             </motion.div>
                         ))}

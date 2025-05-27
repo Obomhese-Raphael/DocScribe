@@ -1,16 +1,11 @@
 import Document from "../models/documentModel.js";
 
+// Get all processed documents with summaries for the history page
 export const getSummariesHistory = async (req, res) => {
   try {
     // Get all processed documents with summaries, sorted by upload date (newest first)
-    const documents = await Document.find({
-      isProcessed: true,
-      summary: { $exists: true, $ne: null, $ne: "" },
-    })
-      .sort({ uploadDate: -1 })
-      .select(
-        "originalName fileName fileType fileSize uploadDate summary isProcessed"
-      );
+    const documents = await Document.find({});
+    
 
     // Transform the data to match the frontend interface
     const summaries = documents.map((doc) => ({
@@ -41,6 +36,7 @@ export const getSummariesHistory = async (req, res) => {
   }
 };
 
+// Download document summary as a text file
 export const downloadSummary = async (req, res) => {
   try {
     const { id } = req.params;
@@ -100,6 +96,7 @@ export const downloadSummary = async (req, res) => {
   }
 };
 
+// Generate a shareable link for the document summary
 export const generateShareLink = async (req, res) => {
   try {
     const { id } = req.params;
@@ -139,6 +136,7 @@ export const generateShareLink = async (req, res) => {
   }
 };
 
+// Delete a document and its summary
 export const deleteDocument = async (req, res) => {
   try {
     const { id } = req.params;
@@ -166,6 +164,7 @@ export const deleteDocument = async (req, res) => {
   }
 };
 
+// Get shared summary by document ID
 export const getSharedSummary = async (req, res) => {
   try {
     const { id } = req.params;
@@ -214,6 +213,7 @@ export const getSharedSummary = async (req, res) => {
   }
 };
 
+// Get all documents with pagination and search functionality
 export const getAllDocuments = async (req, res) => {
   try {
     const { page = 1, limit = 10, search = "", processed } = req.query;
@@ -291,7 +291,7 @@ export const getDocumentById = async (req, res) => {
   }
 };
 
-// Update document summary
+// Update the summary of a document
 export const updateDocumentSummary = async (req, res) => {
   try {
     const { id } = req.params;

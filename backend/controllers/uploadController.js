@@ -65,6 +65,7 @@ export const uploadFile = async (req, res) => {
     }
 
     // Generate summary if we have content
+    // Generate summary if we have content
     if (extractedText && extractedText.trim().length > 0) {
       try {
         let summary = "";
@@ -72,31 +73,41 @@ export const uploadFile = async (req, res) => {
         // For larger documents, use the long text handler
         if (extractedText.length > 10000) {
           summary = await summarizeLongText(extractedText, {
-            maxLength: 500, // Get a substantial multi-paragraph summary
-            minLength: 150, // Ensure it's not too short
-            doSample: true, // Use sampling for natural language
-            temperature: 1.0, // Standard creativity
-            repetitionPenalty: 1.2, // Avoid repetition
+            maxLength: 500,
+            minLength: 150,
+            doSample: true,
+            temperature: 1.0,
+            repetitionPenalty: 1.2,
           });
         } else {
           // For shorter texts, use regular summarizer
           const textForSummary = extractedText.slice(0, 10000);
           summary = await summarizeText(textForSummary, {
-            maxLength: 400, // Get a detailed multi-paragraph summary
-            minLength: 100, // Ensure substantive content
-            doSample: true, // Use sampling for natural language
-            numBeams: 4, // Use beam search for quality
-            temperature: 1.0, // Standard creativity
+            maxLength: 400,
+            minLength: 100,
+            doSample: true,
+            numBeams: 4,
+            temperature: 1.0,
           });
         }
+
+        // IMPORTANT: Actually save the summary to the document
+        if (summary && summary.trim()) {
+          document.summary = summary;
+          document.isProcessed = true;
+        } else {
+          document.summary = "Summary generation failed.";
+          document.isProcessed = false;
+        }
       } catch (error) {
-        console.log("Error in upload file: ");
+        console.log("Error generating summary:", error);
+        document.summary = "Error occurred while generating summary.";
+        document.isProcessed = false;
       }
     } else {
       document.summary = "No text content available to summarize.";
       document.isProcessed = false;
     }
-
     await document.save();
 
     res.status(201).json({
@@ -159,16 +170,20 @@ export const uploadText = async (req, res) => {
         });
       }
 
-      if (summary) {
+      // IMPORTANT: Actually save the summary to the document
+      if (summary && summary.trim()) {
         document.summary = summary;
         document.isProcessed = true;
       } else {
-        console.log("Something is wrong 1");
+        console.log("Summary generation returned empty result");
+        document.summary = "Summary generation failed.";
+        document.isProcessed = false;
       }
     } catch (summaryError) {
       console.error("Error generating summary:", summaryError);
+      document.summary = "Error occurred while generating summary.";
+      document.isProcessed = false;
     }
-
     await document.save();
 
     // Return success response

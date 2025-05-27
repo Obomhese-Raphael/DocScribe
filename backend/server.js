@@ -10,6 +10,7 @@ import { fileURLToPath } from "url";
 import adminRouter from "./routes/adminRoutes.js";
 import summaryRoute from "./routes/summaryRoute.js";
 import { errorHandler } from "./middleware/errorHandler.js";
+import webhookRouter from "./routes/webhook.js";
 
 // Get directory name in ES module
 const __filename = fileURLToPath(import.meta.url);
@@ -21,6 +22,9 @@ const PORT = process.env.PORT || 5000;
 
 // Connect to MongoDB
 connectDB();
+
+// Clerk webhook handler
+app.use("/api/webhooks", webhookRouter);
 
 // Middleware
 app.use(cors());

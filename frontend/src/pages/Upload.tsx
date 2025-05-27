@@ -124,7 +124,6 @@ const UploadPage = () => {
 
       // Fetch document summary after successful upload
       await fetchDocumentSummary(response.document.id);
-      setDocumentSummary(response.document.summary)
 
       // Clear the success message after a few seconds
       setTimeout(() => {
@@ -161,9 +160,17 @@ const UploadPage = () => {
       setUploadSuccess(true);
       setUploadedDocument(response.document);
 
-      // Fetch document summary after successful upload
-      await fetchDocumentSummary(response.document.id);
-
+      // The summary should already be in the response
+      if (response.document.summary) {
+        setDocumentSummary(response.document.summary);
+        // Log the summary for debugging
+        console.log('Document Summary:', response.document.summary);
+      } else {
+        // Only fetch if not included in response
+        await fetchDocumentSummary(response.document.id);
+        // Log the summary for debugging
+        console.log('Fetched Document Summary:', documentSummary);
+      }
       // Clear files after successful upload
       setFiles([]);
 
@@ -197,6 +204,12 @@ const UploadPage = () => {
   const fetchDocumentSummary = async (id: string) => {
     try {
       const response = await axios.get<SummaryResponse>(`/api/upload/get-summary/${id}`);
+      // Check if the response contains a summary
+      if (!response.data || !response.data.summary) {
+        throw new Error('No summary found for this document');
+      }
+      // Log the response for debugging
+      console.log('Document Summary Response:', response.data);
       setDocumentSummary(response.data.summary);
     } catch (error) {
       console.error('Error fetching document summary:', error);
