@@ -124,6 +124,8 @@ const UploadPage = () => {
 
       // Fetch document summary after successful upload
       await fetchDocumentSummary(response.document.id);
+      console.log('Document Summary:', response.document.summary);
+      
 
       // Clear the success message after a few seconds
       setTimeout(() => {

@@ -65,7 +65,6 @@ export const uploadFile = async (req, res) => {
     }
 
     // Generate summary if we have content
-    // Generate summary if we have content
     if (extractedText && extractedText.trim().length > 0) {
       try {
         let summary = "";
@@ -82,6 +81,15 @@ export const uploadFile = async (req, res) => {
         } else {
           // For shorter texts, use regular summarizer
           const textForSummary = extractedText.slice(0, 10000);
+          // In uploadController.js, add this before calling summarizeText:
+          console.log(
+            "About to summarize text:",
+            text.substring(0, 100) + "..."
+          );
+          console.log("Text length:", text.length);
+
+          const summary = await summarizeText(textForSummary, options);
+          console.log("Received summary:", summary);
           summary = await summarizeText(textForSummary, {
             maxLength: 400,
             minLength: 100,
@@ -154,17 +162,23 @@ export const uploadText = async (req, res) => {
       // For longer texts, use the long text handler
       if (text.length > 10000) {
         summary = await summarizeLongText(text, {
-          maxLength: 500,
-          minLength: 150,
+          maxLength: 600,
+          minLength: 300,
           doSample: true,
           temperature: 1.0,
         });
       } else {
         // For shorter texts, use standard summarizer
         const textForSummary = text.slice(0, 10000);
+        // In uploadController.js, add this before calling summarizeText:
+        console.log("About to summarize text:", text.substring(0, 100) + "...");
+        console.log("Text length:", text.length);
+
+        const summary = await summarizeText(textForSummary, options);
+        console.log("Received summary:", summary);
         summary = await summarizeText(textForSummary, {
           maxLength: 400,
-          minLength: 100,
+          minLength: 200,
           doSample: true,
           temperature: 1.0,
         });

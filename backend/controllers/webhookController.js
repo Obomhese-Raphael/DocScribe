@@ -4,10 +4,6 @@ import { Webhook } from "svix";
 import connectDB from "../config/mongodb.js";
 
 export const clerkWebhookHandler = async (req, res) => {
-  console.log("🚀 Webhook endpoint hit!");
-  console.log("📧 Headers:", JSON.stringify(req.headers, null, 2));
-  console.log("📦 Body type:", typeof req.body);
-  console.log("📦 Body:", req.body);
 
   try {
     // Ensure database connection
@@ -15,7 +11,6 @@ export const clerkWebhookHandler = async (req, res) => {
 
     // Get the webhook secret from environment variables
     const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
-    console.log("🔐 Webhook secret exists:", !!webhookSecret);
 
     if (!webhookSecret) {
       console.error("CLERK_WEBHOOK_SECRET is not configured");
@@ -46,11 +41,11 @@ export const clerkWebhookHandler = async (req, res) => {
 
     try {
       // Verify the webhook payload
-      // evt = wh.verify(req.body, {
-      //   "svix-id": svixId,
-      //   "svix-timestamp": svixTimestamp,
-      //   "svix-signature": svixSignature,
-      // });
+      evt = wh.verify(req.body, {
+        "svix-id": svixId,
+        "svix-timestamp": svixTimestamp,
+        "svix-signature": svixSignature,
+      });
     } catch (err) {
       console.error("Webhook verification failed:", err.message);
       return res.status(400).json({
@@ -61,8 +56,6 @@ export const clerkWebhookHandler = async (req, res) => {
 
     // Extract data and event type
     const { data, type: eventType } = evt;
-
-    console.log(`Processing webhook event: ${eventType} for user: ${data.id}`);
 
     // Handle different event types
     switch (eventType) {
@@ -114,7 +107,7 @@ export const clerkWebhookHandler = async (req, res) => {
             image: data.image_url || "",
           };
 
-          const updatedUser = await User.findByIdAndUpdate(data.id, userData, {
+          const updatedUser = await User.findOneAndUpdate(data.id, userData, {
             new: true,
             runValidators: true,
           });

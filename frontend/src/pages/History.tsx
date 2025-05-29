@@ -43,12 +43,16 @@ interface ApiResponse {
     message?: string;
 }
 
-interface SummaryApiResponse {
-    status: number;
-    statusText: string;
+interface DocumentContentApiResponse {
+    success: boolean;
     data: {
-        content: string
-    }
+        content: string;
+        originalName: string;
+        fileType: string;
+        uploadDate: string;
+        _id: string;
+    };
+    message?: string;
 }
 
 const History = () => {
@@ -59,8 +63,9 @@ const History = () => {
     const [copied, setCopied] = useState<string | null>(null);
     const [refreshing, setRefreshing] = useState<boolean>(false);
     const [selectedSummary, setSelectedSummary] = useState<Summary | null>(null);
-    const [summaryDocumentId, setSummaryDocumentId] = useState<string>("")
+    const [summaryDocumentId, setSummaryDocumentId] = useState<string>("");
     const [documentContent, setDocumentContent] = useState<string>("");
+    const [loadingContent, setLoadingContent] = useState<boolean>(false);
     const [activeTab, setActiveTab] = useState<"summary" | "content">("summary");
     const VITE_API_BASE_URL_DEV = import.meta.env.VITE_API_BASE_URL_DEV;
     // const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -90,7 +95,6 @@ const History = () => {
                         new Date(a.summaryDate).getTime()
                 );
                 setSummaries(sortedSummaries);
-                // setSummaryDocumentId(response.data.)
             } else {
                 setError(response.data.message || "Failed to fetch summaries");
             }
@@ -115,28 +119,68 @@ const History = () => {
         fetchSummaries(true);
     };
 
+    const fetchDocumentContent = async (id: string) => {
+        try {
+            setLoadingContent(true);
+            console.log("Fetching document content for ID:", id);
+
+            // Try the first interface structure
+            const response = await axios.get<DocumentContentApiResponse>(`${VITE_API_BASE_URL_DEV}/api/upload/get-content/${id}`);
+
+            console.log("Full API Response:", response.data);
+
+            if (response.data.success && response.data.data && response.data.data.content) {
+                // If API returns with success wrapper
+                setDocumentContent(response.data.data.content);
+
+                if (selectedSummary) {
+                    setSelectedSummary({
+                        ...selectedSummary,
+                        document: {
+                            ...selectedSummary.document,
+                            content: response.data.data.content
+                        }
+                    });
+                }
+            } else if (response.data && typeof response.data === 'object' && 'content' in response.data) {
+                // If API returns content directly
+                const contentResponse = response.data as any;
+                setDocumentContent(contentResponse.content);
+
+                if (selectedSummary) {
+                    setSelectedSummary({
+                        ...selectedSummary,
+                        document: {
+                            ...selectedSummary.document,
+                            content: contentResponse.content
+                        }
+                    });
+                }
+            } else {
+                console.log("Unexpected response structure:", response.data);
+                setDocumentContent("Content not available - unexpected response format");
+            }
+
+        } catch (error: any) {
+            console.log("Error fetching document content:", error);
+            console.log("Error response:", error.response?.data);
+            setError("Failed to fetch document content");
+            setDocumentContent("Failed to load content");
+        } finally {
+            setLoadingContent(false);
+        }
+    }
+
+    // Updated handleViewSummary function
     const handleViewSummary = (summary: Summary) => {
         setSelectedSummary(summary);
-        console.log(summary?._id);
-        console.log(summaryDocumentId);
-        fetchDocumentContent(summary?._id)
+        setDocumentContent(""); // Reset content
+        fetchDocumentContent(summary?._id);
         setSummaryDocumentId(summary?._id);
         setActiveTab('summary');
     }
+    
 
-    const fetchDocumentContent = async (id: string) => {
-        try {
-            const response = await axios.get<SummaryApiResponse>(`${VITE_API_BASE_URL_DEV}/api/upload/get-content/${id}`);
-            if (!response) {
-                console.log("Invalid api endpoint")
-            }
-            console.log("Response from fetch Document: ", response)
-            setDocumentContent(response?.data?.data?.content);
-            console.log("DOCUMENT CONTENT: ", documentContent);
-        } catch (error) {
-            console.log()
-        }
-    }
 
     const closeModal = () => { setSelectedSummary(null) }
 
@@ -569,7 +613,7 @@ const History = () => {
                                             </button>
                                         </div>
                                         <pre className="text-gray-800 leading-relaxed whitespace-pre-wrap font-sans text-sm">
-                                            {selectedSummary.document.content || 'Content not available'}
+                                                {documentContent || 'Content not available'}
                                         </pre>
                                     </div>
                                 </div>
