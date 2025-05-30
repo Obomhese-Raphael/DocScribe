@@ -29,16 +29,18 @@ export const summarizeText = async (text, options = {}) => {
 
     console.log("Starting text summarization...");
 
-    // Check if API key is available
+    // Check if API key is available - FIXED THE LOGIC HERE
     if (!process.env.HUGGINGFACE_API_KEY) {
       console.error("Missing HUGGINGFACE_API_KEY environment variable");
       throw new Error("API key not configured");
     }
 
+    console.log("HUGGINGFACE_API_KEY environment variable available");
+
     // Default options for longer, more detailed summaries
     const defaultOptions = {
       maxLength: 400,
-      minLength: 100,
+      minLength: 200,
       doSample: true,
       numBeams: 4,
       temperature: 1.0,
@@ -56,8 +58,10 @@ export const summarizeText = async (text, options = {}) => {
     const truncatedText = text.slice(0, 4000);
 
     console.log("Sending request to Hugging Face API...");
+    console.log("Text length:", truncatedText.length);
 
     const response = await fetch(
+      // "https://api-inference.huggingface.co/models/facebook/bart-large-cnn",
       "https://router.huggingface.co/hf-inference/models/facebook/bart-large-cnn",
       {
         headers: {
@@ -87,11 +91,11 @@ export const summarizeText = async (text, options = {}) => {
       }
     );
 
-
     // Check if the request was successful
     if (!response.ok) {
       const errorText = await response.text();
       console.error("API Error response:", errorText);
+      console.error("Response status:", response.status);
 
       let errorData;
       try {
@@ -101,8 +105,18 @@ export const summarizeText = async (text, options = {}) => {
       }
 
       // If model is loading, try fallback
-      if (errorData.error && errorData.error.includes("loading")) {
+      if (
+        errorData.error &&
+        (errorData.error.includes("loading") ||
+          errorData.error.includes("currently loading"))
+      ) {
         console.log("Model is loading, attempting fallback summary...");
+        return createFallbackSummary(text);
+      }
+
+      // If rate limited, try fallback
+      if (response.status === 429) {
+        console.log("Rate limited, attempting fallback summary...");
         return createFallbackSummary(text);
       }
 
@@ -248,7 +262,7 @@ export const summarizeLongText = async (text, options = {}) => {
 
         // Add small delay between requests to avoid rate limiting
         if (i < chunks.length - 1) {
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 2000)); // Increased delay
         }
       } catch (error) {
         console.error(`Error summarizing chunk ${i + 1}:`, error);

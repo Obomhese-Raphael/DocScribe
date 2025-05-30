@@ -67,6 +67,11 @@ export const uploadFile = async (req, res) => {
     // Generate summary if we have content
     if (extractedText && extractedText.trim().length > 0) {
       try {
+        console.log(
+          "About to summarize text:",
+          extractedText.substring(0, 100) + "..."
+        );
+        console.log("Text length:", extractedText.length);
         let summary = "";
 
         // For larger documents, use the long text handler

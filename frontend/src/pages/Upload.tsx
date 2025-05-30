@@ -158,6 +158,7 @@ const UploadPage = () => {
 
       // Upload file using our API service
       const response = await uploadFile(fileToUpload) as UploadResponse;
+      console.log("Upload File Response:", response);
 
       setUploadSuccess(true);
       setUploadedDocument(response.document);
@@ -165,13 +166,10 @@ const UploadPage = () => {
       // The summary should already be in the response
       if (response.document.summary) {
         setDocumentSummary(response.document.summary);
-        // Log the summary for debugging
         console.log('Document Summary:', response.document.summary);
       } else {
-        // Only fetch if not included in response
-        await fetchDocumentSummary(response.document.id);
-        // Log the summary for debugging
-        console.log('Fetched Document Summary:', documentSummary);
+        console.log('No summary received from upload');
+        setDocumentSummary('Summary not available');
       }
       // Clear files after successful upload
       setFiles([]);

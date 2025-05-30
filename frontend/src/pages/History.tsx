@@ -65,7 +65,6 @@ const History = () => {
     const [selectedSummary, setSelectedSummary] = useState<Summary | null>(null);
     const [summaryDocumentId, setSummaryDocumentId] = useState<string>("");
     const [documentContent, setDocumentContent] = useState<string>("");
-    const [loadingContent, setLoadingContent] = useState<boolean>(false);
     const [activeTab, setActiveTab] = useState<"summary" | "content">("summary");
     const VITE_API_BASE_URL_DEV = import.meta.env.VITE_API_BASE_URL_DEV;
     // const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -86,7 +85,6 @@ const History = () => {
             const response = await axios.get<ApiResponse>(
                 `${VITE_API_BASE_URL_DEV}/api/summaries/history`
             );
-            console.log("RESPONSE: ", response);
             if (response.data.success) {
                 // Sort summaries by date (newest first)
                 const sortedSummaries = response.data.data.sort(
@@ -121,17 +119,13 @@ const History = () => {
 
     const fetchDocumentContent = async (id: string) => {
         try {
-            setLoadingContent(true);
-            console.log("Fetching document content for ID:", id);
-
             // Try the first interface structure
             const response = await axios.get<DocumentContentApiResponse>(`${VITE_API_BASE_URL_DEV}/api/upload/get-content/${id}`);
-
-            console.log("Full API Response:", response.data);
 
             if (response.data.success && response.data.data && response.data.data.content) {
                 // If API returns with success wrapper
                 setDocumentContent(response.data.data.content);
+                console.log("Summary Document ID:", summaryDocumentId);
 
                 if (selectedSummary) {
                     setSelectedSummary({
@@ -166,8 +160,6 @@ const History = () => {
             console.log("Error response:", error.response?.data);
             setError("Failed to fetch document content");
             setDocumentContent("Failed to load content");
-        } finally {
-            setLoadingContent(false);
         }
     }
 
@@ -179,7 +171,7 @@ const History = () => {
         setSummaryDocumentId(summary?._id);
         setActiveTab('summary');
     }
-    
+
 
 
     const closeModal = () => { setSelectedSummary(null) }
@@ -399,7 +391,7 @@ const History = () => {
                     </p>
                     {summaries.length === 0 && (
                         <button
-                            onClick={() => (window.location.href = "/")}
+                            onClick={() => (window.location.href = "/upload")}
                             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                         >
                             Upload First Document
@@ -613,7 +605,7 @@ const History = () => {
                                             </button>
                                         </div>
                                         <pre className="text-gray-800 leading-relaxed whitespace-pre-wrap font-sans text-sm">
-                                                {documentContent || 'Content not available'}
+                                            {documentContent || 'Content not available'}
                                         </pre>
                                     </div>
                                 </div>
