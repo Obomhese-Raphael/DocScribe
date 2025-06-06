@@ -11,10 +11,10 @@ const AboutPage = () => {
     const teamMembers: TeamMember[] = [
         {
             id: 1,
-            name: 'David Johnson',
-            role: 'Founder & CEO',
+            name: 'Obomhese Raphael',
+            role: 'Founder',
             bio: 'Visionary leader passionate about leveraging AI for document understanding. Based in Lagos, Nigeria.',
-            image: 'https://img.freepik.com/free-photo/business-man-banner-concept-with-copy-space_23-2149601460.jpg?semt=ais_hybrid&w=740',
+            image: 'https://media.licdn.com/dms/image/v2/D4E03AQHTJapgxyTKOA/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1679320367723?e=1754524800&v=beta&t=EjByH0Bq8qsiLbok6rnummQLHY7Q6apcxzcNY9Ud0cg',
         },
         {
             id: 2,
