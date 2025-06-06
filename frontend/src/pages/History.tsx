@@ -66,8 +66,8 @@ const History = () => {
     const [summaryDocumentId, setSummaryDocumentId] = useState<string>("");
     const [documentContent, setDocumentContent] = useState<string>("");
     const [activeTab, setActiveTab] = useState<"summary" | "content">("summary");
-    const VITE_API_BASE_URL_DEV = import.meta.env.VITE_API_BASE_URL_DEV;
-    // const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+    // const VITE_API_BASE_URL_DEV = import.meta.env.VITE_API_BASE_URL_DEV;
+    const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
     useEffect(() => {
         fetchSummaries();
     }, []);
@@ -83,7 +83,7 @@ const History = () => {
 
             // Updated API endpoint to match your backend structure
             const response = await axios.get<ApiResponse>(
-                `${VITE_API_BASE_URL_DEV}/api/summaries/history`
+                `${VITE_API_BASE_URL}/api/summaries/history`
             );
             if (response.data.success) {
                 // Sort summaries by date (newest first)
@@ -120,7 +120,7 @@ const History = () => {
     const fetchDocumentContent = async (id: string) => {
         try {
             // Try the first interface structure
-            const response = await axios.get<DocumentContentApiResponse>(`${VITE_API_BASE_URL_DEV}/api/upload/get-content/${id}`);
+            const response = await axios.get<DocumentContentApiResponse>(`${VITE_API_BASE_URL}/api/upload/get-content/${id}`);
 
             if (response.data.success && response.data.data && response.data.data.content) {
                 // If API returns with success wrapper
@@ -179,7 +179,7 @@ const History = () => {
     const handleDownload = async (summaryId: string, fileName: string) => {
         try {
             const response = await axios.get(
-                `${VITE_API_BASE_URL_DEV}/api/summaries/${summaryId}/download`,
+                `${VITE_API_BASE_URL}/api/summaries/${summaryId}/download`,
                 {
                     responseType: "blob",
                 }
@@ -214,7 +214,7 @@ const History = () => {
             const response = await axios.post<{
                 success: boolean;
                 shareableLink: string;
-            }>(`${VITE_API_BASE_URL_DEV}/api/summaries/${summaryId}/share`);
+            }>(`${VITE_API_BASE_URL}/api/summaries/${summaryId}/share`);
 
             if (response.data.success) {
                 // Update the summary with the shareable link
@@ -253,7 +253,7 @@ const History = () => {
         }
 
         try {
-            await axios.delete(`${VITE_API_BASE_URL_DEV}/api/summaries/${summaryId}`);
+            await axios.delete(`${VITE_API_BASE_URL}/api/summaries/${summaryId}`);
 
             // Remove the summary from the local state
             setSummaries((prevSummaries) =>

@@ -6,7 +6,7 @@ import {
   summarizeLongText,
 } from "../services/aiSummarization.js";
 
-// Upload file - Modified for serverless environment
+// Upload file - Fixed version
 export const uploadFile = async (req, res) => {
   try {
     if (!req.file) {
@@ -19,7 +19,7 @@ export const uploadFile = async (req, res) => {
       `file_${Date.now()}_${originalName.replace(/\s+/g, "_")}`;
     const mimetype = req.file.mimetype;
     const size = req.file.size;
-    const fileBuffer = req.file.buffer; // Use the buffer directly instead of file path
+    const fileBuffer = req.file.buffer;
 
     const document = new Document({
       originalName: originalName,
@@ -27,19 +27,18 @@ export const uploadFile = async (req, res) => {
       fileType: mimetype,
       fileSize: size,
       isProcessed: false,
-      // Don't save filePath for serverless environment
     });
 
     let extractedText = "";
 
-    // Process file from buffer instead of file path
+    // Process file from buffer
     if (mimetype === "text/plain") {
       try {
         extractedText = fileBuffer.toString("utf8");
         document.content = extractedText;
       } catch (error) {
         console.error("Error reading text file:", error);
-        extractedText = ""; // Reset on error
+        extractedText = "";
       }
     } else if (
       mimetype ===
@@ -51,7 +50,7 @@ export const uploadFile = async (req, res) => {
         document.content = extractedText;
       } catch (error) {
         console.error("Error reading DOCX file:", error);
-        extractedText = ""; // Reset on error
+        extractedText = "";
       }
     } else if (mimetype === "application/pdf") {
       try {
@@ -60,18 +59,20 @@ export const uploadFile = async (req, res) => {
         document.content = extractedText;
       } catch (error) {
         console.error("Error reading PDF file:", error);
-        extractedText = ""; // Reset on error
+        extractedText = "";
       }
     }
 
     // Generate summary if we have content
     if (extractedText && extractedText.trim().length > 0) {
+      console.log("Extracted Text: ", extractedText);
       try {
         console.log(
           "About to summarize text:",
           extractedText.substring(0, 100) + "..."
         );
         console.log("Text length:", extractedText.length);
+
         let summary = "";
 
         // For larger documents, use the long text handler
@@ -86,33 +87,35 @@ export const uploadFile = async (req, res) => {
         } else {
           // For shorter texts, use regular summarizer
           const textForSummary = extractedText.slice(0, 10000);
-          // In uploadController.js, add this before calling summarizeText:
-          console.log(
-            "About to summarize text:",
-            text.substring(0, 100) + "..."
-          );
-          console.log("Text length:", text.length);
 
-          const summary = await summarizeText(textForSummary, options);
-          console.log("Received summary:", summary);
-          summary = await summarizeText(textForSummary, {
+          // FIXED: Define options properly
+          const options = {
             maxLength: 400,
-            minLength: 100,
+            minLength: 200,
             doSample: true,
             numBeams: 4,
             temperature: 1.0,
-          });
+          };
+
+          summary = await summarizeText(textForSummary, options);
+          console.log("Received summary:", summary);
         }
 
-        // IMPORTANT: Actually save the summary to the document
+        // Save the summary to the document
         if (summary && summary.trim()) {
           document.summary = summary;
           document.isProcessed = true;
+          console.log(
+            "Summary saved to document:",
+            summary.substring(0, 100) + "..."
+          );
         } else {
+          console.log("No summary generated or empty summary received");
           document.summary = "Summary generation failed.";
           document.isProcessed = false;
         }
       } catch (error) {
+      console.log("Extracted Text for the Error: ", extractedText);
         console.log("Error generating summary:", error);
         document.summary = "Error occurred while generating summary.";
         document.isProcessed = false;
@@ -121,6 +124,7 @@ export const uploadFile = async (req, res) => {
       document.summary = "No text content available to summarize.";
       document.isProcessed = false;
     }
+
     await document.save();
 
     res.status(201).json({
@@ -141,7 +145,7 @@ export const uploadFile = async (req, res) => {
   }
 };
 
-// Upload text - Modified for serverless environment
+// Upload text - Fixed version
 export const uploadText = async (req, res) => {
   try {
     const { text } = req.body;
@@ -157,11 +161,14 @@ export const uploadText = async (req, res) => {
       fileSize: Buffer.byteLength(text, "utf8"),
       content: text,
       isProcessed: false,
-      // Don't save filePath for serverless environment
     });
 
     // Generate summary for the text
     try {
+      console.log("TEXT: ", text);
+      console.log("About to summarize text:", text.substring(0, 100) + "...");
+      console.log("Text length:", text.length);
+
       let summary = "";
 
       // For longer texts, use the long text handler
@@ -175,24 +182,27 @@ export const uploadText = async (req, res) => {
       } else {
         // For shorter texts, use standard summarizer
         const textForSummary = text.slice(0, 10000);
-        // In uploadController.js, add this before calling summarizeText:
-        console.log("About to summarize text:", text.substring(0, 100) + "...");
-        console.log("Text length:", text.length);
 
-        const summary = await summarizeText(textForSummary, options);
-        console.log("Received summary:", summary);
-        summary = await summarizeText(textForSummary, {
+        // FIXED: Define options properly
+        const options = {
           maxLength: 400,
           minLength: 200,
           doSample: true,
           temperature: 1.0,
-        });
+        };
+
+        summary = await summarizeText(textForSummary, options);
+        console.log("Received summary:", summary);
       }
 
-      // IMPORTANT: Actually save the summary to the document
+      // Save the summary to the document
       if (summary && summary.trim()) {
         document.summary = summary;
         document.isProcessed = true;
+        console.log(
+          "Summary saved to document:",
+          summary.substring(0, 100) + "..."
+        );
       } else {
         console.log("Summary generation returned empty result");
         document.summary = "Summary generation failed.";
@@ -203,6 +213,7 @@ export const uploadText = async (req, res) => {
       document.summary = "Error occurred while generating summary.";
       document.isProcessed = false;
     }
+
     await document.save();
 
     // Return success response

@@ -20,6 +20,7 @@ dotenv.config();
  * @param {boolean} options.noRepeatNgramSize - Size of n-grams to avoid repeating (default: 3)
  * @returns {Promise<string>} - The summarized text
  */
+
 export const summarizeText = async (text, options = {}) => {
   try {
     // Check if text is provided and not empty
@@ -29,13 +30,11 @@ export const summarizeText = async (text, options = {}) => {
 
     console.log("Starting text summarization...");
 
-    // Check if API key is available - FIXED THE LOGIC HERE
+    // Check if API key is available
     if (!process.env.HUGGINGFACE_API_KEY) {
       console.error("Missing HUGGINGFACE_API_KEY environment variable");
       throw new Error("API key not configured");
     }
-
-    console.log("HUGGINGFACE_API_KEY environment variable available");
 
     // Default options for longer, more detailed summaries
     const defaultOptions = {
@@ -51,7 +50,7 @@ export const summarizeText = async (text, options = {}) => {
       noRepeatNgramSize: 3,
     };
 
-    // Merge default options with provided options
+    // Merge default options with provided options - FIXED THE VARIABLE NAME
     const summarizationOptions = { ...defaultOptions, ...options };
 
     // Truncate text if it's too long (BART model has input limits)
@@ -61,8 +60,7 @@ export const summarizeText = async (text, options = {}) => {
     console.log("Text length:", truncatedText.length);
 
     const response = await fetch(
-      // "https://api-inference.huggingface.co/models/facebook/bart-large-cnn",
-      "https://router.huggingface.co/hf-inference/models/facebook/bart-large-cnn",
+      "https://api-inference.huggingface.co/models/facebook/bart-large-cnn",
       {
         headers: {
           Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
