@@ -594,7 +594,7 @@ const History = () => {
                                         <div className="flex items-center justify-between mb-3">
                                             <h3 className="font-semibold text-gray-900">Original Document Content</h3>
                                             <button
-                                                onClick={() => copyToClipboard(selectedSummary.document.content || '', `content-${selectedSummary._id}`)}
+                                                    onClick={() => copyToClipboard(documentContent || '', `content-${selectedSummary._id}`)}
                                                 className="p-1 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded"
                                                 title="Copy content"
                                             >
