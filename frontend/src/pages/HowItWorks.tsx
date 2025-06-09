@@ -81,7 +81,8 @@ const HowItWorks = () => {
                     <div className="aspect-w-16 aspect-h-9 bg-gray-100 rounded-lg flex items-center justify-center">
                         <div className="w-full p-8">
                             <h3 className="text-lg font-medium text-gray-900 mb-6 text-center">Document Processing Flow</h3>
-                            <div className="flex items-center justify-between p-8">
+                            {/* Desktop Layout */}
+                            <div className="hidden md:flex items-center justify-between p-8">
                                 {/* Document Input */}
                                 <div className="flex flex-col items-center">
                                     <div className="bg-indigo-100 p-4 rounded-lg w-16 h-16 flex items-center justify-center mb-2">
@@ -111,6 +112,50 @@ const HowItWorks = () => {
                                 <div className="mx-4">
                                     <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                                    </svg>
+                                </div>
+
+                                {/* Summary Output */}
+                                <div className="flex flex-col items-center">
+                                    <div className="bg-green-100 p-4 rounded-lg w-16 h-16 flex items-center justify-center mb-2">
+                                        <FaFileContract className="text-green-600 text-2xl" />
+                                    </div>
+                                    <div className="text-sm font-medium text-gray-700">Summary</div>
+                                    <div className="text-xs text-gray-500">Key Points</div>
+                                </div>
+                            </div>
+
+                            {/* Mobile Layout */}
+                            <div className="md:hidden flex flex-col items-center space-y-6 p-4">
+                                {/* Document Input */}
+                                <div className="flex flex-col items-center">
+                                    <div className="bg-indigo-100 p-4 rounded-lg w-16 h-16 flex items-center justify-center mb-2">
+                                        <FaFileAlt className="text-indigo-600 text-2xl" />
+                                    </div>
+                                    <div className="text-sm font-medium text-gray-700">Document</div>
+                                    <div className="text-xs text-gray-500">PDF/DOCX/TXT</div>
+                                </div>
+
+                                {/* Vertical Arrow */}
+                                <div className="my-2">
+                                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                                    </svg>
+                                </div>
+
+                                {/* AI Processing */}
+                                <div className="flex flex-col items-center">
+                                    <div className="bg-blue-100 p-4 rounded-lg w-16 h-16 flex items-center justify-center mb-2">
+                                        <FaRobot className="text-blue-600 text-2xl" />
+                                    </div>
+                                    <div className="text-sm font-medium text-gray-700">AI Analysis</div>
+                                    <div className="text-xs text-gray-500">NLP Processing</div>
+                                </div>
+
+                                {/* Vertical Arrow */}
+                                <div className="my-2">
+                                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                                     </svg>
                                 </div>
 

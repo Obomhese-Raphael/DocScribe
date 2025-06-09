@@ -120,7 +120,6 @@ export const generateShareLink = async (req, res) => {
 
     // Generate a shareable link (you can customize this based on your domain)
     const baseUrl = import.meta.env.VITE_FRONTEND_BASE_URL;
-    console.log("BASE URL:", baseUrl);
     const shareableLink = `${baseUrl}/shared/${document._id}`;
 
     res.status(200).json({

@@ -124,7 +124,6 @@ const UploadPage = () => {
 
       // Fetch document summary after successful upload
       await fetchDocumentSummary(response.document.id);
-      console.log('Document Summary:', response.document.summary);
       setDocumentSummary(response.document.summary || 'Summary not available');
 
       // Clear the success message after a few seconds
@@ -158,7 +157,6 @@ const UploadPage = () => {
 
       // Upload file using our API service
       const response = await uploadFile(fileToUpload) as UploadResponse;
-      console.log("Upload File Response:", response);
 
       setUploadSuccess(true);
       setUploadedDocument(response.document);
@@ -166,7 +164,6 @@ const UploadPage = () => {
       // The summary should already be in the response
       if (response.document.summary) {
         setDocumentSummary(response.document.summary);
-        console.log('Document Summary:', response.document.summary);
       } else {
         console.log('No summary received from upload');
         setDocumentSummary('Summary not available');
@@ -209,7 +206,6 @@ const UploadPage = () => {
         throw new Error('No summary found for this document');
       }
       // Log the response for debugging
-      console.log('Document Summary Response:', response.data);
       setDocumentSummary(response.data.summary);
     } catch (error) {
       console.error('Error fetching document summary:', error);

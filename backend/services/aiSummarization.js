@@ -56,11 +56,8 @@ export const summarizeText = async (text, options = {}) => {
     // Truncate text if it's too long (BART model has input limits)
     const truncatedText = text.slice(0, 4000);
 
-    console.log("Sending request to Hugging Face API...");
-    console.log("Text length:", truncatedText.length);
-
     const response = await fetch(
-      "https://api-inference.huggingface.co/models/facebook/bart-large-cnn",
+      "https://router.huggingface.co/hf-inference/models/facebook/bart-large-cnn",
       {
         headers: {
           Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
@@ -126,10 +123,8 @@ export const summarizeText = async (text, options = {}) => {
 
     // Extract the summary from the response
     if (Array.isArray(result) && result.length > 0 && result[0].summary_text) {
-      console.log("Successfully generated summary");
       return result[0].summary_text;
     } else if (result && result.summary_text) {
-      console.log("Successfully generated summary (alternative format)");
       return result.summary_text;
     } else {
       console.error("Unexpected API response format:", result);
@@ -188,7 +183,7 @@ const createFallbackSummary = (text) => {
       summary = summary.substring(0, 500) + "...";
     }
 
-    return `[Auto-generated summary] ${summary}`;
+    return `${summary}`;
   } catch (error) {
     console.error("Error creating fallback summary:", error);
     return "Unable to generate summary at this time.";
@@ -202,13 +197,11 @@ export const summarizeLongText = async (text, options = {}) => {
       throw new Error("No text provided for summarization");
     }
 
-    const maxLength = 4000;
+    const maxLength = 3500;
 
     if (text.length <= maxLength) {
       return await summarizeText(text, options);
     }
-
-    console.log("Processing long text - splitting into chunks...");
 
     // Split text into chunks
     const chunks = [];

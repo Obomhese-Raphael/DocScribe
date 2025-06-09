@@ -65,14 +65,7 @@ export const uploadFile = async (req, res) => {
 
     // Generate summary if we have content
     if (extractedText && extractedText.trim().length > 0) {
-      console.log("Extracted Text: ", extractedText);
       try {
-        console.log(
-          "About to summarize text:",
-          extractedText.substring(0, 100) + "..."
-        );
-        console.log("Text length:", extractedText.length);
-
         let summary = "";
 
         // For larger documents, use the long text handler
@@ -98,24 +91,18 @@ export const uploadFile = async (req, res) => {
           };
 
           summary = await summarizeText(textForSummary, options);
-          console.log("Received summary:", summary);
         }
 
         // Save the summary to the document
         if (summary && summary.trim()) {
           document.summary = summary;
           document.isProcessed = true;
-          console.log(
-            "Summary saved to document:",
-            summary.substring(0, 100) + "..."
-          );
         } else {
           console.log("No summary generated or empty summary received");
           document.summary = "Summary generation failed.";
           document.isProcessed = false;
         }
       } catch (error) {
-      console.log("Extracted Text for the Error: ", extractedText);
         console.log("Error generating summary:", error);
         document.summary = "Error occurred while generating summary.";
         document.isProcessed = false;
@@ -165,10 +152,6 @@ export const uploadText = async (req, res) => {
 
     // Generate summary for the text
     try {
-      console.log("TEXT: ", text);
-      console.log("About to summarize text:", text.substring(0, 100) + "...");
-      console.log("Text length:", text.length);
-
       let summary = "";
 
       // For longer texts, use the long text handler
@@ -192,17 +175,12 @@ export const uploadText = async (req, res) => {
         };
 
         summary = await summarizeText(textForSummary, options);
-        console.log("Received summary:", summary);
       }
 
       // Save the summary to the document
       if (summary && summary.trim()) {
         document.summary = summary;
         document.isProcessed = true;
-        console.log(
-          "Summary saved to document:",
-          summary.substring(0, 100) + "..."
-        );
       } else {
         console.log("Summary generation returned empty result");
         document.summary = "Summary generation failed.";
@@ -243,7 +221,6 @@ export const summarizeFileById = async (req, res) => {
     const { summaryOptions } = req.body;
 
     const document = await Document.findById(id);
-
     if (!document) {
       return res.status(404).json({ error: "File not found" });
     }
@@ -253,21 +230,19 @@ export const summarizeFileById = async (req, res) => {
       return res.status(400).json({ error: "No content to summarize" });
     }
 
+    // Default options for detailed summaries
+    const defaultOptions = {
+      maxLength: 400,
+      minLength: 100,
+      doSample: true,
+      temperature: 1.0,
+      numBeams: 4,
+      repetitionPenalty: 1.2,
+    };
+
+    const options = { ...defaultOptions, ...(summaryOptions || {}) };
+
     try {
-      // Default options for detailed summaries
-      const defaultOptions = {
-        maxLength: 400,
-        minLength: 100,
-        doSample: true,
-        temperature: 1.0,
-        numBeams: 4,
-        repetitionPenalty: 1.2,
-      };
-
-      // Merge default options with any provided from the request
-      const options = { ...defaultOptions, ...(summaryOptions || {}) };
-
-      // Use long text handler for longer documents
       let summary;
       if (text.length > 10000) {
         summary = await summarizeLongText(text, options);
@@ -275,8 +250,7 @@ export const summarizeFileById = async (req, res) => {
         summary = await summarizeText(text, options);
       }
 
-      if (summary) {
-        // Update the document with the new summary
+      if (summary && summary.trim()) {
         document.summary = summary;
         document.isProcessed = true;
         await document.save();
@@ -287,17 +261,20 @@ export const summarizeFileById = async (req, res) => {
           isProcessed: true,
         });
       } else {
-        console.log("Something is wrong 2");
-
-        return res.status(200).json({
-          success: true,
-          summary: summary,
-          isProcessed: true,
-          note: "Something is Wrong 3",
+        return res.status(500).json({
+          success: false,
+          error: "Failed to generate summary",
+          isProcessed: false,
         });
       }
     } catch (apiError) {
       console.error("Summarization API error:", apiError);
+      return res.status(500).json({
+        success: false,
+        error: "Summarization service unavailable",
+        details: apiError.message,
+        isProcessed: false,
+      });
     }
   } catch (error) {
     console.error("Error summarizing file content:", error);
@@ -362,7 +339,6 @@ export const getFileSummaryById = async (req, res) => {
       return res.status(404).json({ error: "File not found" });
     }
     if (document.summary) {
-      console.log("Document Summary: ", document.summary);
       return res.status(200).json({ summary: document.summary });
     } else {
       return res.status(404).json({ error: "Summary not found" });

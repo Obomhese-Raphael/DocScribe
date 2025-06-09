@@ -19,7 +19,7 @@ export const submitNewsletter = async (req, res) => {
       message: "Thanks for subscribing!",
     });
   } catch (error) {
-    console.log("Error Submitting newsletter", error);
+    console.error("Error Submitting newsletter", error);
     return res.status(501).json({
       success: false,
       message: "Error Submitting Form",
