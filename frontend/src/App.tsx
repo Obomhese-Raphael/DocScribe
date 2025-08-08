@@ -11,7 +11,7 @@ import HowItWorks from "./pages/HowItWorks";
 import ScrollToTop from "./components/ScrollToTop";
 import History from "./pages/History";
 import { useUser } from "@clerk/clerk-react";
-import { SignIn } from "@clerk/clerk-react";
+import { SignIn, SignUp } from "@clerk/clerk-react"; // Import SignUp
 import Loader from "./components/Loader";
 
 // Protected Route Component
@@ -60,6 +60,21 @@ const App = () => {
                 path="/sign-in"
                 redirectUrl="/"
                 signUpUrl="/sign-up"
+              />
+            </div>
+          }
+        />
+
+        {/* Public route for sign-up */}
+        <Route
+          path="/sign-up"
+          element={
+            <div className="flex items-center justify-center min-h-screen bg-gray-50">
+              <SignUp
+                routing="path"
+                path="/sign-up"
+                redirectUrl="/"
+                signInUrl="/sign-in"
               />
             </div>
           }
