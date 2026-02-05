@@ -6,6 +6,75 @@ import {
   summarizeLongText,
 } from "../services/aiSummarization.js";
 
+// Grok
+export const uploadText = async (req, res) => {
+  console.log("=== TEXT UPLOAD ENDPOINT HIT ===");
+  console.log("Received text length:", req.body?.text?.length || "no text");
+  try {
+    const { text } = req.body;
+
+    if (!text || text.trim() === "") {
+      return res.status(400).json({ error: "No text provided" });
+    }
+
+    const document = new Document({
+      originalName: "pasted-text.txt",
+      fileName: `text_${Date.now()}.txt`,
+      fileType: "text/plain",
+      fileSize: Buffer.byteLength(text, "utf8"),
+      content: text,
+      isProcessed: false,
+    });
+
+    // Generate summary using Groq
+    try {
+      let summary = "";
+
+      // Only use chunking for extremely long text (> ~100k chars)
+      // Groq Llama 3.1 handles up to ~128k tokens comfortably
+      if (text.length > 100000) {
+        summary = await summarizeLongText(text);
+      } else {
+        summary = await summarizeText(text);
+      }
+
+      // Save summary to document
+      if (summary && summary.trim() !== "") {
+        document.summary = summary;
+        document.isProcessed = true;
+      } else {
+        console.log("Summary generation returned empty result");
+        document.summary = "Summary generation failed.";
+        document.isProcessed = false;
+      }
+    } catch (summaryError) {
+      console.error("Error generating summary:", summaryError);
+      document.summary = "Error occurred while generating summary.";
+      document.isProcessed = false;
+    }
+
+    await document.save();
+
+    // Return success response
+    res.status(201).json({
+      success: true,
+      document: {
+        id: document._id,
+        originalName: document.originalName,
+        fileType: document.fileType,
+        uploadDate: document.uploadDate,
+        summary: document.summary || null,
+      },
+    });
+  } catch (error) {
+    console.error("Error uploading text:", error);
+    res.status(500).json({
+      error: "Text upload failed",
+      details: error.message,
+    });
+  }
+};
+
 // Upload file - Fixed version
 export const uploadFile = async (req, res) => {
   try {
@@ -125,92 +194,10 @@ export const uploadFile = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error uploading File: ", error);
+    console.error("Error uploading File from upload controller: ", error);
     res
       .status(500)
       .json({ error: "File upload failed", details: error.message });
-  }
-};
-
-// Upload text - Fixed version
-export const uploadText = async (req, res) => {
-  try {
-    const { text } = req.body;
-
-    if (!text || text.trim() === "") {
-      return res.status(400).json({ error: "No text provided" });
-    }
-
-    const document = new Document({
-      originalName: "pasted-text.txt",
-      fileName: `text_${Date.now()}.txt`,
-      fileType: "text/plain",
-      fileSize: Buffer.byteLength(text, "utf8"),
-      content: text,
-      isProcessed: false,
-    });
-
-    // Generate summary for the text
-    try {
-      let summary = "";
-
-      // For longer texts, use the long text handler
-      if (text.length > 10000) {
-        summary = await summarizeLongText(text, {
-          maxLength: 600,
-          minLength: 300,
-          doSample: true,
-          temperature: 1.0,
-        });
-      } else {
-        // For shorter texts, use standard summarizer
-        const textForSummary = text.slice(0, 10000);
-
-        // FIXED: Define options properly
-        const options = {
-          maxLength: 400,
-          minLength: 200,
-          doSample: true,
-          temperature: 1.0,
-        };
-
-        summary = await summarizeText(textForSummary, options);
-      }
-
-      // Save the summary to the document
-      if (summary && summary.trim()) {
-        document.summary = summary;
-        document.isProcessed = true;
-      } else {
-        console.log("Summary generation returned empty result");
-        document.summary = "Summary generation failed.";
-        document.isProcessed = false;
-      }
-    } catch (summaryError) {
-      console.error("Error generating summary:", summaryError);
-      document.summary = "Error occurred while generating summary.";
-      document.isProcessed = false;
-    }
-
-    await document.save();
-
-    // Return success response
-    res.status(201).json({
-      success: true,
-      document: {
-        id: document._id,
-        originalName: document.originalName,
-        fileType: document.fileType,
-        uploadDate: document.uploadDate,
-        summary: document.summary || null,
-      },
-    });
-  } catch (error) {
-    console.log("Error uploading text: ", error);
-    res.status(500).json({
-      error: "Text upload failed",
-      details: error.message,
-    });
   }
 };
 
@@ -308,6 +295,37 @@ export const getFileById = async (req, res) => {
   } catch (error) {
     console.error("Error fetching file:", error);
     res.status(500).json({ error: "Failed to fetch file" });
+  }
+};
+
+// In uploadRouter or summaryRoute
+export const updateFileName = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { newName } = req.body;
+
+    if (!newName || typeof newName !== "string" || newName.trim() === "") {
+      return res.status(400).json({ error: "Valid new name is required" });
+    }
+
+    const document = await Document.findByIdAndUpdate(
+      id,
+      { originalName: newName.trim() },
+      { new: true, runValidators: true },
+    );
+
+    if (!document) {
+      return res.status(404).json({ error: "Document not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "File name updated",
+      document,
+    });
+  } catch (error) {
+    console.error("Rename error:", error);
+    res.status(500).json({ error: "Failed to rename file" });
   }
 };
 

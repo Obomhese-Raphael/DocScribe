@@ -15,7 +15,7 @@ export const uploadFile = async (file: File) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error uploading file:', error);
+    console.error('Error uploading file from api.ts:', error);
     throw error;
   }
 };

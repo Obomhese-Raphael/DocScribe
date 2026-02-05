@@ -5,139 +5,71 @@ import fetch from "node-fetch";
 dotenv.config();
 
 /**
- * Summarizes text using the Hugging Face API (BART-large-CNN model)
+ * Summarizes text using Groq API (Llama 3.1 model)
  * @param {string} text - The text to summarize
- * @param {Object} options - Configuration options for summarization
- * @param {number} options.maxLength - Maximum length of the summary (default: 400)
- * @param {number} options.minLength - Minimum length of the summary (default: 100)
- * @param {boolean} options.doSample - Whether to use sampling (default: true)
- * @param {number} options.numBeams - Number of beams for beam search (default: 4)
- * @param {number} options.temperature - Temperature for sampling (default: 1.0)
- * @param {number} options.topK - Top-k sampling (default: 50)
- * @param {number} options.topP - Top-p sampling (default: 0.95)
- * @param {number} options.repetitionPenalty - Repetition penalty (default: 1.0)
- * @param {number} options.lengthPenalty - Length penalty (default: 1.0)
- * @param {boolean} options.noRepeatNgramSize - Size of n-grams to avoid repeating (default: 3)
  * @returns {Promise<string>} - The summarized text
  */
-
-export const summarizeText = async (text, options = {}) => {
+export const summarizeText = async (text) => {
   try {
-    // Check if text is provided and not empty
     if (!text || text.trim() === "") {
-      throw new Error("No text provided for summarization");
+      return "No text provided for summarization.";
     }
 
-    console.log("Starting text summarization...");
-
-    // Check if API key is available
-    if (!process.env.HUGGINGFACE_API_KEY) {
-      console.error("Missing HUGGINGFACE_API_KEY environment variable");
-      throw new Error("API key not configured");
+    if (!process.env.GROQ_API_KEY) {
+      throw new Error("Missing GROQ_API_KEY in environment variables");
     }
 
-    // Default options for longer, more detailed summaries
-    const defaultOptions = {
-      maxLength: 400,
-      minLength: 200,
-      doSample: true,
-      numBeams: 4,
-      temperature: 1.0,
-      topK: 50,
-      topP: 0.95,
-      repetitionPenalty: 1.2,
-      lengthPenalty: 1.0,
-      noRepeatNgramSize: 3,
-    };
+    const prompt = `
+You are an expert summarizer. Provide a concise, clear, and faithful summary of the following text.
+Focus only on the core ideas, main events, and emotional tone.
+Aim for 3–8 sentences maximum — be brief but complete.
+Do NOT add interpretation, external information, or unnecessary details.
 
-    // Merge default options with provided options - FIXED THE VARIABLE NAME
-    const summarizationOptions = { ...defaultOptions, ...options };
+Text:
+${text}
 
-    // Truncate text if it's too long (BART model has input limits)
-    const truncatedText = text.slice(0, 4000);
+Summary:`;
 
     const response = await fetch(
-      "https://router.huggingface.co/hf-inference/models/facebook/bart-large-cnn",
+      "https://api.groq.com/openai/v1/chat/completions",
       {
+        method: "POST",
         headers: {
-          Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
           "Content-Type": "application/json",
         },
-        method: "POST",
         body: JSON.stringify({
-          inputs: truncatedText,
-          parameters: {
-            max_length: summarizationOptions.maxLength,
-            min_length: summarizationOptions.minLength,
-            do_sample: summarizationOptions.doSample,
-            num_beams: summarizationOptions.numBeams,
-            temperature: summarizationOptions.temperature,
-            top_k: summarizationOptions.topK,
-            top_p: summarizationOptions.topP,
-            repetition_penalty: summarizationOptions.repetitionPenalty,
-            length_penalty: summarizationOptions.lengthPenalty,
-            no_repeat_ngram_size: summarizationOptions.noRepeatNgramSize,
-          },
-          options: {
-            wait_for_model: true,
-            use_cache: true,
-          },
+          model: "openai/gpt-oss-120b", // Use 8b-instant if you want faster/cheaper responses
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.3, // Low for factual, concise output
+          max_tokens: 300,
+          top_p: 0.9,
         }),
-      }
+      },
     );
 
-    // Check if the request was successful
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("API Error response:", errorText);
-      console.error("Response status:", response.status);
-
-      let errorData;
-      try {
-        errorData = JSON.parse(errorText);
-      } catch {
-        errorData = { error: errorText };
-      }
-
-      // If model is loading, try fallback
-      if (
-        errorData.error &&
-        (errorData.error.includes("loading") ||
-          errorData.error.includes("currently loading"))
-      ) {
-        console.log("Model is loading, attempting fallback summary...");
-        return createFallbackSummary(text);
-      }
-
-      // If rate limited, try fallback
-      if (response.status === 429) {
-        console.log("Rate limited, attempting fallback summary...");
-        return createFallbackSummary(text);
-      }
-
-      throw new Error(`API request failed: ${errorData.error || errorText}`);
+      const err = await response.json();
+      throw new Error(
+        `Groq API error: ${err.error?.message || response.statusText}`,
+      );
     }
 
-    const result = await response.json();
-    console.log("Response from Hugging Face API:", result);
+    const data = await response.json();
+    const summary = data.choices?.[0]?.message?.content?.trim();
 
-    // Extract the summary from the response
-    if (Array.isArray(result) && result.length > 0 && result[0].summary_text) {
-      return result[0].summary_text;
-    } else if (result && result.summary_text) {
-      return result.summary_text;
-    } else {
-      console.error("Unexpected API response format:", result);
+    console.log("Data from aiSummarization: ", data);
+    console.log("Summary: ", summary);
 
-      // If API returns unexpected format, create fallback
-      console.log("Creating fallback summary due to unexpected response...");
-      return createFallbackSummary(text);
+    if (!summary) {
+      throw new Error("No summary content returned from Groq");
     }
+
+    console.log("Groq summary generated successfully");
+    return summary;
   } catch (error) {
-    console.error("Error in summarizeText:", error);
-
-    // Instead of returning undefined, create a fallback summary
-    console.log("Creating fallback summary due to error...");
+    console.error("Groq summarization error:", error.message);
+    // Fallback to extractive summary if Groq fails
     return createFallbackSummary(text);
   }
 };
@@ -160,132 +92,93 @@ const createFallbackSummary = (text) => {
     const sentences = cleanText
       .split(/[.!?]+/)
       .map((s) => s.trim())
-      .filter((s) => s.length > 20); // Filter out very short sentences
+      .filter((s) => s.length > 20);
 
     if (sentences.length === 0) {
       return "Document content is too short to generate a meaningful summary.";
     }
 
-    // Take first few sentences and last sentence for a basic summary
     let summary = "";
-
     if (sentences.length <= 3) {
       summary = sentences.join(". ") + ".";
     } else {
-      // Take first 2 sentences and last sentence
       const firstPart = sentences.slice(0, 2).join(". ");
       const lastSentence = sentences[sentences.length - 1];
       summary = `${firstPart}. ... ${lastSentence}.`;
     }
 
-    // Ensure summary isn't too long
+    // Cap length
     if (summary.length > 500) {
       summary = summary.substring(0, 500) + "...";
     }
 
-    return `${summary}`;
+    console.log("Summary from createFallBackSummary: ", summary);
+
+    return summary;
   } catch (error) {
-    console.error("Error creating fallback summary:", error);
+    console.error("Fallback summary error:", error);
     return "Unable to generate summary at this time.";
   }
 };
 
-// Handle longer texts by splitting and rejoining
-export const summarizeLongText = async (text, options = {}) => {
+/**
+ * Handles very long texts (rarely needed with Groq's large context)
+ * @param {string} text - The full text
+ * @returns {Promise<string>} - Combined summary
+ */
+export const summarizeLongText = async (text) => {
   try {
-    if (!text || text.trim() === "") {
-      throw new Error("No text provided for summarization");
+    // Threshold where chunking might still help (Groq handles ~128k tokens ~100k+ chars easily)
+    if (text.length <= 150000) {
+      return await summarizeText(text);
     }
 
-    const maxLength = 3500;
+    console.log("Text is extremely long — chunking for safety");
 
-    if (text.length <= maxLength) {
-      return await summarizeText(text, options);
-    }
-
-    // Split text into chunks
+    const maxChunk = 40000; // Conservative chunk size
     const chunks = [];
-    let startIndex = 0;
+    let start = 0;
 
-    while (startIndex < text.length) {
-      let endIndex = Math.min(startIndex + maxLength, text.length);
-
-      // Try to find a good break point
-      if (endIndex < text.length) {
-        const paragraphBreak = text.lastIndexOf("\n\n", endIndex);
-        const singleBreak = text.lastIndexOf("\n", endIndex);
-        const sentenceBreak = text.lastIndexOf(".", endIndex);
-
-        if (paragraphBreak > startIndex && paragraphBreak > endIndex - 500) {
-          endIndex = paragraphBreak;
-        } else if (singleBreak > startIndex && singleBreak > endIndex - 200) {
-          endIndex = singleBreak;
-        } else if (
-          sentenceBreak > startIndex &&
-          sentenceBreak > endIndex - 100
-        ) {
-          endIndex = sentenceBreak + 1;
-        }
+    while (start < text.length) {
+      let end = Math.min(start + maxChunk, text.length);
+      // Try to break at natural points
+      if (end < text.length) {
+        const paraBreak = text.lastIndexOf("\n\n", end);
+        const lineBreak = text.lastIndexOf("\n", end);
+        if (paraBreak > start) end = paraBreak;
+        else if (lineBreak > start) end = lineBreak;
       }
-
-      chunks.push(text.slice(startIndex, endIndex));
-      startIndex = endIndex;
+      chunks.push(text.slice(start, end));
+      start = end;
     }
 
-    console.log(`Split text into ${chunks.length} chunks for summarization`);
-
-    // Options for individual chunk summaries
-    const chunkOptions = {
-      ...options,
-      maxLength: Math.min(250, options.maxLength || 250),
-      minLength: Math.min(50, options.minLength || 50),
-    };
-
-    // Summarize each chunk with error handling
     const chunkSummaries = [];
-    for (let i = 0; i < chunks.length; i++) {
+    for (const chunk of chunks) {
       try {
-        console.log(`Processing chunk ${i + 1}/${chunks.length}...`);
-        const summary = await summarizeText(chunks[i], chunkOptions);
-        if (summary && summary.trim()) {
-          chunkSummaries.push(summary);
+        const chunkSummary = await summarizeText(chunk);
+        if (chunkSummary && chunkSummary.trim()) {
+          chunkSummaries.push(chunkSummary);
         }
-
-        // Add small delay between requests to avoid rate limiting
-        if (i < chunks.length - 1) {
-          await new Promise((resolve) => setTimeout(resolve, 2000)); // Increased delay
-        }
-      } catch (error) {
-        console.error(`Error summarizing chunk ${i + 1}:`, error);
-        // Continue with other chunks even if one fails
+        // Small delay to respect rate limits
+        await new Promise((r) => setTimeout(r, 1500));
+      } catch (err) {
+        console.error("Chunk summarization failed:", err);
       }
     }
 
     if (chunkSummaries.length === 0) {
-      console.log(
-        "No chunks were successfully summarized, creating fallback..."
-      );
       return createFallbackSummary(text);
     }
 
-    // Join the summaries
-    const combinedSummary = chunkSummaries.join(" ");
+    const combined = chunkSummaries.join("\n\n");
+    console.log("Combined from summarize Long texts: ", combined);
 
-    // If the combined summary is still too long, summarize it again
-    if (combinedSummary.length > maxLength) {
-      console.log("Combined summary too long, creating final summary...");
-      try {
-        return await summarizeText(combinedSummary, options);
-      } catch (error) {
-        console.error("Error summarizing combined text:", error);
-        // Return the combined summary even if final summarization fails
-        return combinedSummary;
-      }
-    }
-
-    return combinedSummary;
+    // Final summary of summaries for coherence
+    return await summarizeText(
+      `Combine and condense these summaries into one concise overall summary (3-8 sentences):\n\n${combined}`,
+    );
   } catch (error) {
-    console.error("Error in summarizeLongText:", error);
+    console.error("Long text summarization error:", error);
     return createFallbackSummary(text);
   }
 };

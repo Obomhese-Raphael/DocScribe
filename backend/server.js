@@ -27,13 +27,23 @@ connectDB();
 app.use("/api/webhooks", webhookRouter);
 
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://doc-scribe-frontend.vercel.app",  // remove trailing slash if present
+    ],
+    methods: ["GET", "POST", "PATCH", "OPTIONS", "DELETE"], // add what you need
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+    exposedHeaders: ["Content-Length"], // optional
+  })
+);
+
+// Explicitly handle OPTIONS for all routes (helps with preflight)
+// app.options("*", cors());
 app.use(express.json()); // JSON parsing for all routes
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
-
-// Create the uploads directory if it doesn't exist
-const uploadsDir = path.join(__dirname, "uploads");
-app.use("/uploads", express.static(uploadsDir));
 
 // Routes
 app.use("/api/contact", contactRouter);

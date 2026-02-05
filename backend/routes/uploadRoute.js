@@ -7,6 +7,7 @@ import {
   getFileContentById,
   getFileSummaryById,
   summarizeFileById,
+  updateFileName,
   uploadFile,
   uploadText,
 } from "../controllers/uploadController.js";
@@ -26,6 +27,7 @@ uploadRouter.post("/text", uploadText);
 uploadRouter.delete("/delete-file/:id", deleteFile);
 uploadRouter.get("/get-all", getAllFiles);
 uploadRouter.get("/get-file/:id", getFileById);
+uploadRouter.patch("/documents/:id/rename", updateFileName);
 uploadRouter.get("/get-content/:id", getFileContentById);
 uploadRouter.get("/summarize/:id", summarizeFileById);
 uploadRouter.delete("/delete-all", adminAuthMiddleware, deleteAllFiles);

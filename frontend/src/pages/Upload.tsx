@@ -172,7 +172,7 @@ const UploadPage = () => {
       setFiles([]);
 
     } catch (err: any) {
-      console.error('Error uploading file:', err);
+      console.error('Error uploading file from upload.tsx:', err);
       setError(err.response?.data?.error || 'Failed to upload file');
     } finally {
       setLoading(false);

@@ -58,7 +58,7 @@ const App = () => {
               <SignIn
                 routing="path"
                 path="/sign-in"
-                redirectUrl="/"
+                fallbackRedirectUrl="/"
                 signUpUrl="/sign-up"
               />
             </div>
@@ -73,7 +73,7 @@ const App = () => {
               <SignUp
                 routing="path"
                 path="/sign-up"
-                redirectUrl="/"
+                fallbackRedirectUrl="/"
                 signInUrl="/sign-in"
               />
             </div>
