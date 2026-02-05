@@ -1,119 +1,604 @@
-# DocScribe - AI-Powered Document Summarization
+# DocScribe
 
-DocScribe is a fullstack web application built with the MERN stack (MongoDB, Express.js, React.js, Node.js), enhanced by Vite for a fast development experience and TypeScript for type safety. It leverages the power of Hugging Face's transformer models for intelligent text summarization and Clerk for seamless user authentication. The application allows users to easily summarize various documents and texts, extracting key information quickly and efficiently.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-20232A?logo=react&logoColor=61DAFB)](https://reactjs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/)
 
-## Key Features
+<img width="1839" height="826" alt="image" src="https://github.com/user-attachments/assets/511eaadb-e81e-43da-9f03-3de9969ca49e" />
 
-* **Effortless Document Input:** Users can input text directly or provide links to online documents for summarization.
-* **Intelligent Summarization with Hugging Face:** Utilizes state-of-the-art transformer models from the Hugging Face library to generate concise and coherent summaries.
-* **Secure User Authentication:** Implemented with Clerk for secure and easy user sign-up and login.
-* **Data Persistence with MongoDB:** Stores user data and summarization history using MongoDB with Mongoose for elegant data modeling.
-* **Modern Frontend with Vite and TypeScript:** Built with React.js and TypeScript, bundled with Vite for lightning-fast development and optimized builds.
-* **Intuitive User Interface:** Clean and user-friendly design enhanced with beautiful icons from Lucide React and React Icons.
-* **Responsive Design:** Works seamlessly across various devices and screen sizes.
 
-## Tech Stack
+> AI-powered document summarization platform that transforms lengthy documents into concise, actionable insights using advanced language models.
 
-* **Frontend:**
-    * React.js
-    * TypeScript
-    * Tailwindcss
-    * Vite
-    * Clerk (for authentication)
-    * Lucide React / React Icons (for icons)
-    * React Dropzone
-    * React Toastify
-    * React DOM
-* **Backend:**
-    * Node.js
-    * Express.js
-    * Mongoose (for MongoDB interaction)
-    * Hugging Face Transformers library ([`@huggingface/inference`](https://huggingface.co/docs/inference-api/js-client))
-    * Axios
-    * Cors
-    * mammoth
-    * multer - File Storage
-    * dotenv
-* **Database:**
-    * MongoDB
+[Live Demo](https://doc-scribe-frontend.vercel.app) · [Report Bug](https://github.com/Obomhese-Raphael/DocScribe/issues) · [Request Feature](https://github.com/Obomhese-Raphael/DocScribe/issues)
 
-## Getting Started
+---
 
-Follow these steps to get DocScribe running on your local machine:
+## 📋 Table of Contents
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/Obomhese-Raphael/DocScribe.git
-    cd DocScribe
-    cd frontend / backend
-    ```
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [Tech Stack](#tech-stack)
+- [Architecture](#architecture)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Environment Variables](#environment-variables)
+  - [Running Locally](#running-locally)
+- [Deployment](#deployment)
+- [API Documentation](#api-documentation)
+- [Project Structure](#project-structure)
+- [Contributing](#contributing)
+- [License](#license)
+- [Contact](#contact)
 
-2.  **Install backend dependencies:**
-    ```bash
-    cd backend
-    npm install  # or yarn install
-    ```
+---
 
-3.  **Set up backend environment variables:**
-    * Create a `.env` file in the `backend` directory.
-    * Add your MongoDB connection URI (`MONGODB_URI`), Clerk secret key (`CLERK_SECRET_KEY`), and any other necessary environment variables (e.g., Hugging Face API token if required for specific models).
-    ```env - Backend
-    MONGODB_URI=your_mongodb_connection_string
-    CLERK_WEBHOOK_SECRET=your_clerk_secret_key
-    HUGGINGFACE_API_KEY=your_huggingface_api_token (if needed)
-    PORT=5000 # Or your preferred backend port
-    VITE_BACKEND_URL = http://localhost:5000
-    CLERK_SECRET_KEY=your_clerk_secret_key
-    NODE_ENV = development
-    ```
+## 🎯 Overview
 
-    ```env - Frontend
-    VITE_CLERK_PUBLISHABLE_KEY= ,
-    CLERK_SECRET_KEY= ,
-    VITE_API_BASE_URL = ,
-    VITE_API_BASE_URL_DEV=http://localhost:5000
-    ```
+DocScribe is a full-stack web application that leverages cutting-edge AI technology to provide intelligent document summarization. Built with the MERN stack and powered by Groq's ultra-fast inference engine, it enables users to quickly extract key insights from documents, saving time and improving productivity.
 
-4.  **Start the backend server:**
-    ```bash
-    npm run server  # or yarn dev (if you have a dev script in package.json)
-    ```
+### Why DocScribe?
 
-5.  **Install frontend dependencies:**
-    ```bash
-    cd ../frontend
-    npm install  # or yarn install
-    ```
+- **⚡ Lightning Fast**: Powered by Groq's inference engine for near-instantaneous summaries
+- **🔒 Secure**: Enterprise-grade authentication with Clerk
+- **📱 Responsive**: Seamless experience across all devices
+- **💾 Persistent**: Complete history tracking and document management
+- **🎨 Modern**: Built with the latest web technologies and best practices
 
-6.  **Set up frontend environment variables:**
-    * Create a `.env.local` file in the `frontend` directory.
-    * Add your Clerk frontend API key (`VITE_CLERK_PUBLISHABLE_KEY`) and the backend API base URL (`VITE_API_BASE_URL`).
-    ```env
-    VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
-    VITE_API_BASE_URL=http://localhost:5000/api # Adjust if your backend runs on a different port
-    ```
+---
 
-7.  **Start the frontend development server:**
-    ```bash
-    npm run dev  # or yarn dev
-    ```
+## ✨ Key Features
 
-8.  Open your browser and navigate to `http://localhost:5173` (or the port Vite assigns).
+### Core Functionality
+- **Multi-Format Support**: Upload and summarize PDF, TXT, and DOCX files
+- **AI-Powered Summarization**: Leverages Groq's LLaMA models for intelligent text analysis
+- **Real-time Processing**: Get summaries in seconds, not minutes
+- **Document Management**: Complete CRUD operations for your documents
+- **Search & Filter**: Quickly find specific documents in your history
 
-## Deployment
+### User Experience
+- **Drag & Drop Upload**: Intuitive file upload interface
+- **Inline Editing**: Rename documents directly in the interface
+- **Share Summaries**: Generate shareable links for collaboration
+- **Download Options**: Export summaries as text files
+- **Responsive Design**: Optimized for desktop, tablet, and mobile
 
-You can deploy DocScribe to platforms like Vercel (for the frontend and potentially the backend if using serverless functions) and other Node.js hosting providers (for the backend). Refer to the documentation of these platforms for specific deployment instructions.
+### Security & Authentication
+- **Secure Authentication**: Clerk integration for user management
+- **Protected Routes**: Role-based access control
+- **Data Encryption**: Secure storage of sensitive information
+- **Session Management**: Automatic token refresh and validation
 
-**Important for Vercel:**
+---
 
-* Ensure you set up the necessary environment variables (MongoDB URI, Clerk Secret Key, etc.) in your Vercel project settings.
-* Configure your Vercel project to build both the frontend and backend if they are in the same repository. You might need separate Vercel projects for the frontend and backend for more complex setups.
+## 🛠 Tech Stack
 
-## Contact
+### Frontend
+| Technology | Purpose |
+|------------|---------|
+| **React 18** | UI framework with hooks and modern patterns |
+| **TypeScript** | Type-safe development and better DX |
+| **Vite** | Lightning-fast build tool and dev server |
+| **Tailwind CSS** | Utility-first CSS framework |
+| **React Router** | Client-side routing and navigation |
+| **Axios** | HTTP client for API communication |
+| **React Toastify** | User-friendly notifications |
+| **Lucide React** | Modern, customizable icon library |
+| **React Dropzone** | File upload with drag-and-drop |
 
-Feel free to reach out if you have any questions, suggestions, or just want to connect!
+### Backend
+| Technology | Purpose |
+|------------|---------|
+| **Node.js** | JavaScript runtime environment |
+| **Express.js** | Fast, minimalist web framework |
+| **MongoDB** | NoSQL database for flexible data storage |
+| **Mongoose** | Elegant MongoDB object modeling |
+| **Groq SDK** | AI-powered text summarization |
+| **Clerk SDK** | User authentication and management |
+| **Multer** | Multipart file upload handling |
+| **Mammoth** | DOCX to text conversion |
+| **pdf-parse** | PDF text extraction |
 
-* **Twitter (X):** [ObomheseR](https://x.com/ObomheseR?t=uFit-R7ov-RwEXjtazS0Q&s=09)
-* **Mail:** [obomheser@gmail.com](mailto:obomheser@gmail.com)
-* **GitHub:** [Obomhese Raphael](https://github.com/Obomhese-Raphael)
-* **LinkedIn:** [Obomhese Raphael](https://www.linkedin.com/in/obomheser?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app)
+### DevOps & Infrastructure
+- **Vercel**: Frontend and backend hosting
+- **MongoDB Atlas**: Cloud database service
+- **Git & GitHub**: Version control and collaboration
+- **ESLint & Prettier**: Code quality and formatting
+
+---
+
+## 🏗 Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         Client Layer                         │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
+│  │   React UI   │  │  TypeScript  │  │   Tailwind   │      │
+│  └──────────────┘  └──────────────┘  └──────────────┘      │
+└──────────────────────────────┬──────────────────────────────┘
+                               │
+                          Axios HTTP
+                               │
+┌──────────────────────────────▼──────────────────────────────┐
+│                      Application Layer                       │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
+│  │   Express    │  │  Middleware  │  │    Routes    │      │
+│  └──────────────┘  └──────────────┘  └──────────────┘      │
+└──────────────────────────────┬──────────────────────────────┘
+                               │
+                    ┌──────────┴──────────┐
+                    │                     │
+┌───────────────────▼─────┐   ┌──────────▼──────────────────┐
+│      Data Layer          │   │    External Services        │
+│  ┌──────────────┐        │   │  ┌──────────────┐          │
+│  │   MongoDB    │        │   │  │  Groq API    │          │
+│  │   (Mongoose) │        │   │  │  Clerk Auth  │          │
+│  └──────────────┘        │   │  └──────────────┘          │
+└──────────────────────────┘   └─────────────────────────────┘
+```
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+Ensure you have the following installed:
+
+- **Node.js** >= 18.0.0 ([Download](https://nodejs.org/))
+- **npm** >= 9.0.0 or **yarn** >= 1.22.0
+- **MongoDB** account ([MongoDB Atlas](https://www.mongodb.com/cloud/atlas))
+- **Git** ([Download](https://git-scm.com/))
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Obomhese-Raphael/DocScribe.git
+   cd DocScribe
+   ```
+
+2. **Install backend dependencies**
+   ```bash
+   cd backend
+   npm install
+   ```
+
+3. **Install frontend dependencies**
+   ```bash
+   cd ../frontend
+   npm install
+   ```
+
+### Environment Variables
+
+#### Backend Configuration
+
+Create a `.env` file in the `backend` directory:
+
+```env
+# Server Configuration
+NODE_ENV=development
+PORT=5000
+
+# Database
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/docscribe?retryWrites=true&w=majority
+
+# Authentication (Clerk)
+CLERK_SECRET_KEY=sk_test_xxxxxxxxxxxxxxxxxxxxx
+CLERK_WEBHOOK_SECRET=whsec_xxxxxxxxxxxxxxxxxxxxx
+
+# AI Service (Groq)
+GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxxxxxx
+
+# Frontend URL
+FRONTEND_BASE_URL=http://localhost:5173
+
+# File Upload
+MAX_FILE_SIZE=10485760
+ALLOWED_FILE_TYPES=application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document
+```
+
+#### Frontend Configuration
+
+Create a `.env` file in the `frontend` directory:
+
+```env
+# API Configuration
+VITE_API_BASE_URL=http://localhost:5000
+
+# Authentication (Clerk)
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_xxxxxxxxxxxxxxxxxxxxx
+
+# Environment
+VITE_NODE_ENV=development
+```
+
+### Running Locally
+
+#### Start the Backend Server
+
+```bash
+cd backend
+npm run dev
+```
+
+The backend server will start on `http://localhost:5000`
+
+#### Start the Frontend Development Server
+
+```bash
+cd frontend
+npm run dev
+```
+
+The frontend will be available at `http://localhost:5173`
+
+#### Access the Application
+
+Open your browser and navigate to `http://localhost:5173`
+
+---
+
+## 🌐 Deployment
+
+### Frontend Deployment (Vercel)
+
+1. **Create `vercel.json` in the frontend root:**
+   ```json
+   {
+     "rewrites": [
+       {
+         "source": "/(.*)",
+         "destination": "/index.html"
+       }
+     ]
+   }
+   ```
+
+2. **Deploy to Vercel:**
+   ```bash
+   cd frontend
+   vercel --prod
+   ```
+
+3. **Set environment variables in Vercel dashboard:**
+   - `VITE_API_BASE_URL`
+   - `VITE_CLERK_PUBLISHABLE_KEY`
+
+### Backend Deployment (Vercel)
+
+1. **Ensure `vercel.json` exists in the backend root:**
+   ```json
+   {
+     "version": 2,
+     "builds": [
+       {
+         "src": "server.js",
+         "use": "@vercel/node"
+       }
+     ],
+     "routes": [
+       {
+         "src": "/(.*)",
+         "dest": "/server.js"
+       }
+     ]
+   }
+   ```
+
+2. **Deploy to Vercel:**
+   ```bash
+   cd backend
+   vercel --prod
+   ```
+
+3. **Set environment variables in Vercel dashboard:**
+   - All variables from backend `.env` file
+
+### Post-Deployment
+
+- Update `FRONTEND_BASE_URL` in backend environment variables
+- Update `VITE_API_BASE_URL` in frontend environment variables
+- Test all functionality in production environment
+- Monitor logs for any errors
+
+---
+
+## 📚 API Documentation
+
+### Base URL
+```
+Production: https://your-backend.vercel.app
+Development: http://localhost:5000
+```
+
+### Authentication
+All protected routes require a valid Clerk session token in the `Authorization` header:
+```
+Authorization: Bearer <clerk_session_token>
+```
+
+### Endpoints
+
+#### Document Upload & Summarization
+```http
+POST /api/upload
+Content-Type: multipart/form-data
+
+Body:
+  file: <binary>
+
+Response: 200 OK
+{
+  "success": true,
+  "data": {
+    "_id": "document_id",
+    "originalName": "example.pdf",
+    "summary": "AI-generated summary...",
+    "fileType": "application/pdf",
+    "uploadDate": "2026-02-05T10:30:00.000Z"
+  }
+}
+```
+
+#### Get Summary History
+```http
+GET /api/summaries/history
+
+Response: 200 OK
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "summary_id",
+      "documentId": "document_id",
+      "summaryText": "Summary content...",
+      "summaryDate": "2026-02-05T10:30:00.000Z",
+      "document": {
+        "_id": "document_id",
+        "originalName": "example.pdf",
+        "fileType": "application/pdf"
+      }
+    }
+  ]
+}
+```
+
+#### Generate Share Link
+```http
+POST /api/summaries/:id/share
+
+Response: 200 OK
+{
+  "success": true,
+  "shareableLink": "https://your-app.vercel.app/shared/document_id"
+}
+```
+
+#### Get Shared Summary
+```http
+GET /api/summaries/shared/:id
+
+Response: 200 OK
+{
+  "success": true,
+  "data": {
+    "_id": "document_id",
+    "summaryText": "Summary content...",
+    "document": {
+      "originalName": "example.pdf",
+      "fileType": "application/pdf"
+    }
+  }
+}
+```
+
+#### Download Summary
+```http
+GET /api/summaries/:id/download
+
+Response: 200 OK
+Content-Type: text/plain
+Content-Disposition: attachment; filename="summary.txt"
+```
+
+#### Delete Summary
+```http
+DELETE /api/summaries/:id
+
+Response: 200 OK
+{
+  "success": true,
+  "message": "Summary deleted successfully"
+}
+```
+
+#### Rename Document
+```http
+PATCH /api/upload/documents/:id/rename
+Content-Type: application/json
+
+Body:
+{
+  "newName": "Updated Document Name.pdf"
+}
+
+Response: 200 OK
+{
+  "success": true,
+  "data": {
+    "_id": "document_id",
+    "originalName": "Updated Document Name.pdf"
+  }
+}
+```
+
+---
+
+## 📁 Project Structure
+
+```
+DocScribe/
+├── frontend/
+│   ├── public/
+│   │   └── assets/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── Header.tsx
+│   │   │   ├── Footer.tsx
+│   │   │   └── ProtectedRoute.tsx
+│   │   ├── pages/
+│   │   │   ├── Home.tsx
+│   │   │   ├── History.tsx
+│   │   │   ├── SharedSummary.tsx
+│   │   │   └── About.tsx
+│   │   ├── hooks/
+│   │   │   └── useAuth.ts
+│   │   ├── utils/
+│   │   │   └── api.ts
+│   │   ├── types/
+│   │   │   └── index.ts
+│   │   ├── App.tsx
+│   │   ├── main.tsx
+│   │   └── index.css
+│   ├── .env
+│   ├── vercel.json
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── vite.config.ts
+│   └── tailwind.config.js
+│
+├── backend/
+│   ├── controllers/
+│   │   ├── uploadController.js
+│   │   └── summaryController.js
+│   ├── models/
+│   │   ├── Document.js
+│   │   └── User.js
+│   ├── routes/
+│   │   ├── uploadRoutes.js
+│   │   └── summaryRoutes.js
+│   ├── middleware/
+│   │   ├── auth.js
+│   │   ├── errorHandler.js
+│   │   └── validateFile.js
+│   ├── utils/
+│   │   ├── groqService.js
+│   │   └── fileParser.js
+│   ├── config/
+│   │   └── database.js
+│   ├── uploads/
+│   ├── .env
+│   ├── vercel.json
+│   ├── server.js
+│   └── package.json
+│
+├── .gitignore
+├── LICENSE
+└── README.md
+```
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions from the community! Here's how you can help:
+
+### Development Process
+
+1. **Fork the repository**
+   ```bash
+   # Click the 'Fork' button on GitHub
+   ```
+
+2. **Create a feature branch**
+   ```bash
+   git checkout -b feature/amazing-feature
+   ```
+
+3. **Make your changes**
+   - Write clean, readable code
+   - Follow existing code style
+   - Add comments for complex logic
+   - Update documentation if needed
+
+4. **Test your changes**
+   ```bash
+   npm run test
+   npm run lint
+   ```
+
+5. **Commit your changes**
+   ```bash
+   git commit -m "feat: add amazing feature"
+   ```
+
+6. **Push to your fork**
+   ```bash
+   git push origin feature/amazing-feature
+   ```
+
+7. **Open a Pull Request**
+   - Provide a clear description
+   - Reference any related issues
+   - Wait for review
+
+### Commit Convention
+
+We follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+- `feat:` New feature
+- `fix:` Bug fix
+- `docs:` Documentation changes
+- `style:` Code style changes (formatting, etc.)
+- `refactor:` Code refactoring
+- `test:` Adding or updating tests
+- `chore:` Maintenance tasks
+
+### Code Style
+
+- Use TypeScript for type safety
+- Follow ESLint and Prettier configurations
+- Write meaningful variable and function names
+- Keep functions small and focused
+- Add JSDoc comments for complex functions
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 👤 Contact
+
+**Obomhese Raphael**
+
+- 🐦 Twitter: [@ObomheseR](https://twitter.com/ObomheseR)
+- 📧 Email: obomheser@gmail.com
+- 💼 LinkedIn: [Obomhese Raphael](https://linkedin.com/in/obomhese-raphael)
+- 🐙 GitHub: [@Obomhese-Raphael](https://github.com/Obomhese-Raphael)
+
+---
+
+## 🙏 Acknowledgments
+
+- [Groq](https://groq.com/) for providing ultra-fast AI inference
+- [Clerk](https://clerk.com/) for seamless authentication
+- [MongoDB](https://www.mongodb.com/) for flexible data storage
+- [Vercel](https://vercel.com/) for hosting and deployment
+- The open-source community for amazing tools and libraries
+
+---
+
+<div align="center">
+
+**[⬆ Back to Top](#docscribe)**
+
+Made with ❤️ by [Obomhese Raphael](https://github.com/Obomhese-Raphael)
+
+</div>
