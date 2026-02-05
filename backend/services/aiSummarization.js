@@ -18,12 +18,19 @@ export const summarizeText = async (text) => {
     if (!process.env.GROQ_API_KEY) {
       throw new Error("Missing GROQ_API_KEY in environment variables");
     }
-
     const prompt = `
-You are an expert summarizer. Provide a concise, clear, and faithful summary of the following text.
-Focus only on the core ideas, main events, and emotional tone.
-Aim for 3–8 sentences maximum — be brief but complete.
-Do NOT add interpretation, external information, or unnecessary details.
+You are a world-class summarizer. Distill the following text into the shortest possible faithful summary that still captures the complete essence, main events/plot points, key insights, and emotional tone.
+
+Rules:
+- Maximum 5 sentences (aim for 3–4 whenever possible)
+- Be extremely concise — remove all fluff, repetition, and descriptive padding
+- Use your own natural, clear wording — do NOT copy sentences verbatim unless absolutely necessary
+- Preserve the original meaning and mood; do not invent or interpret
+- Output only the summary — no introduction, no commentary, no "here is a summary"
+- From the following summary, create ONE short, wise, or reflective one-liner (8–15 words max).
+  Start with "Indeed, …" or "In the end, …" or "Ultimately, …".
+  Make it sound thoughtful, human, and slightly poetic — capture the deepest emotion or unspoken truth.
+  Output only the one-liner — nothing else.
 
 Text:
 ${text}
