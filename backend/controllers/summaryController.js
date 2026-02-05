@@ -5,7 +5,6 @@ export const getSummariesHistory = async (req, res) => {
   try {
     // Get all processed documents with summaries, sorted by upload date (newest first)
     const documents = await Document.find({});
-    
 
     // Transform the data to match the frontend interface
     const summaries = documents.map((doc) => ({
@@ -83,7 +82,7 @@ export const downloadSummary = async (req, res) => {
       "Content-Disposition",
       `attachment; filename="${
         document.originalName.split(".")[0]
-      }-summary.txt"`
+      }-summary.txt"`,
     );
 
     res.status(200).send(summaryContent);
@@ -118,8 +117,8 @@ export const generateShareLink = async (req, res) => {
       });
     }
 
-    // Generate a shareable link (you can customize this based on your domain)
-    const baseUrl = import.meta.env.VITE_FRONTEND_BASE_URL;
+    // Use process.env for backend (NOT import.meta.env)
+    const baseUrl = process.env.FRONTEND_BASE_URL;
     const shareableLink = `${baseUrl}/shared/${document._id}`;
 
     res.status(200).json({
@@ -170,7 +169,7 @@ export const getSharedSummary = async (req, res) => {
 
     // Find the document by ID
     const document = await Document.findById(id).select(
-      "originalName fileType uploadDate summary isProcessed fileSize"
+      "originalName fileType uploadDate summary isProcessed fileSize",
     );
 
     if (!document) {
@@ -239,7 +238,7 @@ export const getAllDocuments = async (req, res) => {
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .select(
-        "originalName fileName fileType fileSize uploadDate summary isProcessed"
+        "originalName fileName fileType fileSize uploadDate summary isProcessed",
       );
 
     // Get total count for pagination
@@ -309,7 +308,7 @@ export const updateDocumentSummary = async (req, res) => {
         summary: summary.trim(),
         isProcessed: true,
       },
-      { new: true }
+      { new: true },
     );
 
     if (!document) {

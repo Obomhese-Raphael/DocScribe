@@ -47,18 +47,6 @@ interface ApiResponse {
   message?: string;
 }
 
-interface DocumentContentApiResponse {
-  success: boolean;
-  data: {
-    content: string;
-    originalName: string;
-    fileType: string;
-    uploadDate: string;
-    _id: string;
-  };
-  message?: string;
-}
-
 const History = () => {
   const [summaries, setSummaries] = useState<Summary[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -75,7 +63,8 @@ const History = () => {
 
   const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-   const fetchSummaries = useCallback(
+  // Define fetchSummaries as a memoized function
+  const fetchSummaries = useCallback(
     async (showRefreshLoader = false) => {
       try {
         if (showRefreshLoader) {
@@ -112,11 +101,12 @@ const History = () => {
       }
     },
     [VITE_API_BASE_URL],
-  ); 
+  ); // ← only real dependency
 
+  // Run once on mount
   useEffect(() => {
     fetchSummaries();
-  }, [fetchSummaries]); 
+  }, [fetchSummaries]); // ← now safe, only runs when fetchSummaries changes (almost never)
 
   // Refresh button calls the same stable function
   const handleRefresh = () => {
@@ -125,13 +115,21 @@ const History = () => {
 
   const fetchDocumentContent = async (id: string) => {
     try {
-      const response = await axios.get<DocumentContentApiResponse>(
+      const response = await axios.get(
         `${VITE_API_BASE_URL}/api/upload/get-content/${id}`,
       );
-      if (response.data.success && response.data.data?.content) {
+
+      // The API returns content directly in response.data.data.content
+      if (response.data?.data?.content) {
         setDocumentContent(response.data.data.content);
+      } else if (response.data?.content) {
+        // Fallback if structure is different
+        setDocumentContent(response.data.content);
+      } else {
+        setDocumentContent("No content available");
       }
     } catch (error) {
+      console.error("Error fetching content:", error);
       setDocumentContent("Failed to load content");
     }
   };
@@ -139,7 +137,7 @@ const History = () => {
   const handleViewSummary = (summary: Summary) => {
     setSelectedSummary(summary);
     setDocumentContent("");
-    fetchDocumentContent(summary._id);
+    fetchDocumentContent(summary._id); // ✅ Correct - use summary ID
     setActiveTab("summary");
   };
 
@@ -211,15 +209,29 @@ const History = () => {
       const response = await axios.post<{
         success: boolean;
         shareableLink: string;
+        message?: string;
       }>(`${VITE_API_BASE_URL}/api/summaries/${summaryId}/share`);
-      if (response.data.success) {
+
+      console.log("Share response:", response.data);
+
+      if (response.data.success && response.data.shareableLink) {
         await navigator.clipboard.writeText(response.data.shareableLink);
         setCopied(summaryId);
         setTimeout(() => setCopied(null), 2000);
         toast.success("Link copied!");
+      } else {
+        toast.error(response.data.message || "Failed to generate share link");
       }
-    } catch (err) {
-      toast.error("Share failed");
+    } catch (err: any) {
+      console.error("Share error:", err);
+      console.error("Error response:", err.response?.data);
+
+      const errorMessage =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        "Failed to share. Please try again.";
+
+      toast.error(errorMessage);
     }
   };
 

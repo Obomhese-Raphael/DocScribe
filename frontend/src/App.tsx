@@ -13,6 +13,7 @@ import History from "./pages/History";
 import { useUser } from "@clerk/clerk-react";
 import { SignIn, SignUp } from "@clerk/clerk-react"; // Import SignUp
 import Loader from "./components/Loader";
+import SharedSummary from "./pages/SharedSummary";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -126,6 +127,14 @@ const App = () => {
           element={
             <ProtectedRoute>
               <History />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/shared/:id"
+          element={
+            <ProtectedRoute>
+              <SharedSummary />
             </ProtectedRoute>
           }
         />
