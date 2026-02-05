@@ -75,7 +75,6 @@ export const uploadText = async (req, res) => {
   }
 };
 
-// Upload file - Fixed version
 export const uploadFile = async (req, res) => {
   try {
     if (!req.file) {
@@ -91,8 +90,8 @@ export const uploadFile = async (req, res) => {
     const fileBuffer = req.file.buffer;
 
     const document = new Document({
-      originalName: originalName,
-      fileName: fileName,
+      originalName,
+      fileName,
       fileType: mimetype,
       fileSize: size,
       isProcessed: false,
@@ -100,15 +99,9 @@ export const uploadFile = async (req, res) => {
 
     let extractedText = "";
 
-    // Process file from buffer
+    // Extract text from buffer (same as before)
     if (mimetype === "text/plain") {
-      try {
-        extractedText = fileBuffer.toString("utf8");
-        document.content = extractedText;
-      } catch (error) {
-        console.error("Error reading text file:", error);
-        extractedText = "";
-      }
+      extractedText = fileBuffer.toString("utf8");
     } else if (
       mimetype ===
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -116,68 +109,46 @@ export const uploadFile = async (req, res) => {
       try {
         const result = await mammoth.extractRawText({ buffer: fileBuffer });
         extractedText = result.value;
-        document.content = extractedText;
-      } catch (error) {
-        console.error("Error reading DOCX file:", error);
-        extractedText = "";
+      } catch (err) {
+        console.error("DOCX extraction failed:", err);
       }
     } else if (mimetype === "application/pdf") {
       try {
         const data = await pdfParse(fileBuffer);
         extractedText = data.text;
-        document.content = extractedText;
-      } catch (error) {
-        console.error("Error reading PDF file:", error);
-        extractedText = "";
+      } catch (err) {
+        console.error("PDF extraction failed:", err);
       }
     }
 
-    // Generate summary if we have content
-    if (extractedText && extractedText.trim().length > 0) {
+    document.content = extractedText;
+
+    // Summarize with Groq if we have text
+    if (extractedText?.trim()) {
       try {
         let summary = "";
 
-        // For larger documents, use the long text handler
-        if (extractedText.length > 10000) {
-          summary = await summarizeLongText(extractedText, {
-            maxLength: 500,
-            minLength: 150,
-            doSample: true,
-            temperature: 1.0,
-            repetitionPenalty: 1.2,
-          });
+        // Use long handler only for very large files
+        if (extractedText.length > 100000) {
+          summary = await summarizeLongText(extractedText);
         } else {
-          // For shorter texts, use regular summarizer
-          const textForSummary = extractedText.slice(0, 10000);
-
-          // FIXED: Define options properly
-          const options = {
-            maxLength: 400,
-            minLength: 200,
-            doSample: true,
-            numBeams: 4,
-            temperature: 1.0,
-          };
-
-          summary = await summarizeText(textForSummary, options);
+          summary = await summarizeText(extractedText);
         }
 
-        // Save the summary to the document
-        if (summary && summary.trim()) {
+        if (summary && summary.trim() !== "") {
           document.summary = summary;
           document.isProcessed = true;
         } else {
-          console.log("No summary generated or empty summary received");
-          document.summary = "Summary generation failed.";
+          document.summary = "Summary generation returned empty result.";
           document.isProcessed = false;
         }
-      } catch (error) {
-        console.log("Error generating summary:", error);
-        document.summary = "Error occurred while generating summary.";
+      } catch (summaryError) {
+        console.error("File summarization error:", summaryError);
+        document.summary = "Error generating AI summary.";
         document.isProcessed = false;
       }
     } else {
-      document.summary = "No text content available to summarize.";
+      document.summary = "No readable text could be extracted from the file.";
       document.isProcessed = false;
     }
 
@@ -194,10 +165,11 @@ export const uploadFile = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error uploading File from upload controller: ", error);
-    res
-      .status(500)
-      .json({ error: "File upload failed", details: error.message });
+    console.error("File upload error:", error);
+    res.status(500).json({
+      error: "File upload failed",
+      details: error.message,
+    });
   }
 };
 
