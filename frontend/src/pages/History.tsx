@@ -66,7 +66,6 @@ const History = () => {
   const [copied, setCopied] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [selectedSummary, setSelectedSummary] = useState<Summary | null>(null);
-  const [summaryDocumentId, setSummaryDocumentId] = useState<string>("");
   const [documentContent, setDocumentContent] = useState<string>("");
   const [activeTab, setActiveTab] = useState<"summary" | "content">("summary");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -167,7 +166,6 @@ const History = () => {
     setSelectedSummary(summary);
     setDocumentContent("");
     fetchDocumentContent(summary._id);
-    setSummaryDocumentId(summary._id);
     setActiveTab("summary");
   };
 
