@@ -17,13 +17,14 @@ import SharedSummary from "./pages/SharedSummary";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, isLoaded } = useUser();
+  const { user, isLoaded, isSignedIn } = useUser();
 
   if (!isLoaded) {
     return <Loader />;
   }
 
-  if (!user) {
+  // Allow through if Clerk is still in a verification/OAuth flow
+  if (!isSignedIn && !user) {
     return <Navigate to="/sign-in" replace />;
   }
 
@@ -31,11 +32,17 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 // Public routes that don't require authentication
-const publicRoutes = ["/sign-in", "/sign-up"];
+const publicRoutes = [
+  "/sign-in",
+  "/sign-up",
+  "/sign-up/verify-email-address",
+  "/sign-in/factor-one",
+  "/sign-in/factor-two",
+];
 
 const App = () => {
   const location = useLocation();
-  const { user, isLoaded } = useUser();
+  const { user, isLoaded, isSignedIn } = useUser();
 
   if (!isLoaded) {
     return <Loader />;
@@ -48,27 +55,13 @@ const App = () => {
     <div className="">
       <ToastContainer />
       {/* Only show Navbar on authenticated routes or public routes */}
-      {(user || isPublicRoute) && <Navbar />}
+      {(isSignedIn || isPublicRoute) && <Navbar />}
       <ScrollToTop />
       <Routes location={location} key={location.pathname}>
         {/* Public route for sign-in */}
+        {/* Clerk verification routes */}
         <Route
-          path="/sign-in"
-          element={
-            <div className="flex items-center justify-center min-h-screen bg-gray-50">
-              <SignIn
-                routing="path"
-                path="/sign-in"
-                fallbackRedirectUrl="/"
-                signUpUrl="/sign-up"
-              />
-            </div>
-          }
-        />
-
-        {/* Public route for sign-up */}
-        <Route
-          path="/sign-up"
+          path="/sign-up/*"
           element={
             <div className="flex items-center justify-center min-h-screen bg-gray-50">
               <SignUp
@@ -76,6 +69,20 @@ const App = () => {
                 path="/sign-up"
                 fallbackRedirectUrl="/"
                 signInUrl="/sign-in"
+              />
+            </div>
+          }
+        />
+
+        <Route
+          path="/sign-in/*"
+          element={
+            <div className="flex items-center justify-center min-h-screen bg-gray-50">
+              <SignIn
+                routing="path"
+                path="/sign-in"
+                fallbackRedirectUrl="/"
+                signUpUrl="/sign-up"
               />
             </div>
           }
@@ -143,7 +150,11 @@ const App = () => {
         <Route
           path="*"
           element={
-            user ? <Navigate to="/" replace /> : <Navigate to="/sign-in" replace />
+            user ? (
+              <Navigate to="/" replace />
+            ) : (
+              <Navigate to="/sign-in" replace />
+            )
           }
         />
       </Routes>
@@ -156,7 +167,7 @@ const App = () => {
         </>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default App
+export default App;
