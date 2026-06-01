@@ -1,11 +1,10 @@
 import dotenv from "dotenv";
 import fetch from "node-fetch";
 
-// Load environment variables
 dotenv.config();
 
 /**
- * Summarizes text using Groq API (Llama 3.1 model)
+ * Summarizes text using Groq API (Llama 3.3 70b model)
  * @param {string} text - The text to summarize
  * @returns {Promise<string>} - The summarized text
  */
@@ -18,24 +17,6 @@ export const summarizeText = async (text) => {
     if (!process.env.GROQ_API_KEY) {
       throw new Error("Missing GROQ_API_KEY in environment variables");
     }
-    const prompt = `
-You are a world-class summarizer. Distill the following text into the shortest possible faithful summary that still captures the complete essence, main events/plot points, key insights, and emotional tone.
-
-Rules:
-- Maximum 5 sentences (aim for 3–4 whenever possible)
-- Be extremely concise — remove all fluff, repetition, and descriptive padding
-- Use your own natural, clear wording — do NOT copy sentences verbatim unless absolutely necessary
-- Preserve the original meaning and mood; do not invent or interpret
-- Output only the summary — no introduction, no commentary, no "here is a summary"
-- From the following summary, create ONE short, wise, or reflective one-liner (8–15 words max).
-  Start with "Indeed, …" or "In the end, …" or "Ultimately, …".
-  Make it sound thoughtful, human, and slightly poetic — capture the deepest emotion or unspoken truth.
-  Output only the one-liner — nothing else.
-
-Text:
-${text}
-
-Summary:`;
 
     const response = await fetch(
       "https://api.groq.com/openai/v1/chat/completions",
@@ -46,10 +27,23 @@ Summary:`;
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "openai/gpt-oss-120b", // Use 8b-instant if you want faster/cheaper responses
-          messages: [{ role: "user", content: prompt }],
-          temperature: 0.3, // Low for factual, concise output
-          max_tokens: 300,
+          model: "llama-3.3-70b-versatile", // ✅ Valid Groq model
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a world-class summarizer. Your job is to produce a concise, coherent summary of the provided text. " +
+                "Do NOT copy sentences verbatim — rewrite in your own clear words. " +
+                "Preserve the original meaning and key insights. " +
+                "Output only the summary — no preamble, no commentary, no 'here is a summary'.",
+            },
+            {
+              role: "user",
+              content: `Summarize the following text in 6–10 sentences, covering all main points, key insights, supporting details, and conclusions:\n\n${text}`,
+            },
+          ],
+          temperature: 0.3,
+          max_tokens: 1000,
           top_p: 0.9,
         }),
       },
@@ -65,9 +59,6 @@ Summary:`;
     const data = await response.json();
     const summary = data.choices?.[0]?.message?.content?.trim();
 
-    console.log("Data from aiSummarization: ", data);
-    console.log("Summary: ", summary);
-
     if (!summary) {
       throw new Error("No summary content returned from Groq");
     }
@@ -76,7 +67,6 @@ Summary:`;
     return summary;
   } catch (error) {
     console.error("Groq summarization error:", error.message);
-    // Fallback to extractive summary if Groq fails
     return createFallbackSummary(text);
   }
 };
@@ -92,10 +82,7 @@ const createFallbackSummary = (text) => {
       return "No content available to summarize.";
     }
 
-    // Clean the text
     const cleanText = text.replace(/\s+/g, " ").trim();
-
-    // Split into sentences
     const sentences = cleanText
       .split(/[.!?]+/)
       .map((s) => s.trim())
@@ -114,12 +101,9 @@ const createFallbackSummary = (text) => {
       summary = `${firstPart}. ... ${lastSentence}.`;
     }
 
-    // Cap length
     if (summary.length > 500) {
       summary = summary.substring(0, 500) + "...";
     }
-
-    console.log("Summary from createFallBackSummary: ", summary);
 
     return summary;
   } catch (error) {
@@ -129,26 +113,24 @@ const createFallbackSummary = (text) => {
 };
 
 /**
- * Handles very long texts (rarely needed with Groq's large context)
+ * Handles very long texts by chunking
  * @param {string} text - The full text
  * @returns {Promise<string>} - Combined summary
  */
 export const summarizeLongText = async (text) => {
   try {
-    // Threshold where chunking might still help (Groq handles ~128k tokens ~100k+ chars easily)
     if (text.length <= 150000) {
       return await summarizeText(text);
     }
 
     console.log("Text is extremely long — chunking for safety");
 
-    const maxChunk = 40000; // Conservative chunk size
+    const maxChunk = 40000;
     const chunks = [];
     let start = 0;
 
     while (start < text.length) {
       let end = Math.min(start + maxChunk, text.length);
-      // Try to break at natural points
       if (end < text.length) {
         const paraBreak = text.lastIndexOf("\n\n", end);
         const lineBreak = text.lastIndexOf("\n", end);
@@ -166,7 +148,6 @@ export const summarizeLongText = async (text) => {
         if (chunkSummary && chunkSummary.trim()) {
           chunkSummaries.push(chunkSummary);
         }
-        // Small delay to respect rate limits
         await new Promise((r) => setTimeout(r, 1500));
       } catch (err) {
         console.error("Chunk summarization failed:", err);
@@ -178,11 +159,9 @@ export const summarizeLongText = async (text) => {
     }
 
     const combined = chunkSummaries.join("\n\n");
-    console.log("Combined from summarize Long texts: ", combined);
 
-    // Final summary of summaries for coherence
     return await summarizeText(
-      `Combine and condense these summaries into one concise overall summary (3-8 sentences):\n\n${combined}`,
+      `Combine and condense these summaries into one concise overall summary (3–5 sentences):\n\n${combined}`,
     );
   } catch (error) {
     console.error("Long text summarization error:", error);
